@@ -1,0 +1,24 @@
+import PlayersClient from '../../components/PlayersClient'
+
+type Player = {
+  _id?: string
+  fullName: string
+  shortName: string
+  battingStyle?: string | null
+  bowlingStyle?: string | null
+  role: string
+  isActive?: boolean
+}
+
+export default async function Page() {
+  const res = await fetch(`http://localhost:3000/api/players`, { cache: 'no-store' })
+  const data = await res.json()
+  const players: Player[] = data.players ?? []
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold text-b mb-4">Players</h1>
+      <PlayersClient players={players} />
+    </div>
+  )
+}
