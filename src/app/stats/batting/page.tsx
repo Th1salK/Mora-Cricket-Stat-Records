@@ -12,7 +12,7 @@ type BattingStat = {
 }
 
 export default async function Page() {
-  const res = await fetch('http://localhost:3000/api/stats/batting', { cache: 'no-store' })
+  const res = await fetch('/api/stats/batting', { cache: 'no-store' })
   const data: BattingStat[] = (await res.json()) || []
 
   const stats = Array.isArray(data) ? data.sort((a, b) => (b.runs || 0) - (a.runs || 0)) : []

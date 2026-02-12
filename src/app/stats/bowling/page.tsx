@@ -13,7 +13,7 @@ type BowlingStat = {
 }
 
 export default async function Page() {
-  const res = await fetch('http://localhost:3000/api/stats/bowling', { cache: 'no-store' })
+  const res = await fetch('/api/stats/bowling', { cache: 'no-store' })
   const data: BowlingStat[] = (await res.json()) || []
 
   const stats = Array.isArray(data) ? data.sort((a, b) => (b.wickets || 0) - (a.wickets || 0)) : []

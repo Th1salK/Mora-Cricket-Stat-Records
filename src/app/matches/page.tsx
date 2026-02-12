@@ -10,7 +10,7 @@ type Match = {
 }
 
 export default async function Page() {
-  const res = await fetch('http://localhost:3000/api/matches', { cache: 'no-store' })
+  const res = await fetch('/api/matches', { cache: 'no-store' })
   const data = await  res.json()
   const matches: Match[] = data.matches ?? []
 

@@ -11,7 +11,7 @@ type Player = {
 }
 
 export default async function Page() {
-  const res = await fetch(`http://localhost:3000/api/players`, { cache: 'no-store' })
+  const res = await fetch(`/api/players`, { cache: 'no-store' })
   const data = await res.json()
   const players: Player[] = data.players ?? []
 
