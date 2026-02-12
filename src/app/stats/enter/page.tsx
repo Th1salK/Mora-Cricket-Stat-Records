@@ -16,8 +16,8 @@ type Match = {
 }
 
 export default async function Page() {
-  const playersRes = await fetch('/api/players', { cache: 'no-store' })
-  const matchesRes = await fetch('/api/matches', { cache: 'no-store' })
+  const playersRes = await fetch('{process.env.NEXT_PUBLIC_BASE_URL}api/players', { cache: 'no-store' })
+  const matchesRes = await fetch('{process.env.NEXT_PUBLIC_BASE_URL}/api/matches', { cache: 'no-store' })
 
   const players: Player[] = (await playersRes.json()) || []
   const matches: Match[] = (await matchesRes.json()) || []
