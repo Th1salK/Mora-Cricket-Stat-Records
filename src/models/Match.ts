@@ -5,7 +5,7 @@ export interface IMatch extends Document {
   opponent: string
   venue: 'Home' | 'Away'
   overs: number,
-  matchType: 'League' | 'Friendly' | 'Tournament'
+  matchType: 'Home and Home' | 'Practice' | 'Div 3'|'Inter Uni' | 'SLUG'
   createdAt: Date
   updatedAt: Date
 }
@@ -18,7 +18,7 @@ const MatchSchema = new mongoose.Schema<IMatch>(
     overs: { type: Number, required: true,min:1 },
     matchType: {
       type: String,
-      enum: ['League', 'Friendly', 'Tournament'],
+      enum: ['Home and Home','Practice','Div 3','Inter Uni','SLUG'],
       required: true,
     },
   },
