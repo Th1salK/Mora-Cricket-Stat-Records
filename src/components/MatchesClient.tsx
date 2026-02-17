@@ -7,7 +7,7 @@ type Match = {
   opponent: string
   venue: 'Home' | 'Away'
   overs: number
-  matchType: 'League' | 'Friendly' | 'Tournament'
+  matchType: 'Home and Home' | 'Practice' | 'Div 3'|'Inter Uni' | 'SLUG'
 }
 
 export default function MatchesClient({ matches: initialMatches }: { matches: Match[] }) {
