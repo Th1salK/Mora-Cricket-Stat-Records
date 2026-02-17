@@ -74,9 +74,12 @@ export default function MatchesClient({ matches: initialMatches }: { matches: Ma
           <div>
             <label className="block text-sm font-medium">Match Type</label>
             <select name="matchType" value={form.matchType} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1">
-              <option>League</option>
-              <option>Friendly</option>
-              <option>Tournament</option>
+                  <option>Home and Home</option>
+                  <option>Practice</option>
+                  <option>Div 3</option>
+                  <option>Inter Uni</option>
+                  <option>SLUG</option>
+
             </select>
           </div>
           <div className="flex items-end">
