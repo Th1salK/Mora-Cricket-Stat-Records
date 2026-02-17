@@ -1,3 +1,4 @@
+import { json } from 'stream/consumers'
 import MatchesClient from '../../components/MatchesClient'
 
 type Match = {
@@ -15,7 +16,7 @@ export default async function Page() {
 
   const res = await fetch(`${baseUrl}/api/matches`, { cache: 'no-store' })
   const data = await  res.json()
-  const matches: Match[] = data.matches ?? []
+  const matches: Match[] = await res.json()
 
   return (
     <div className="p-6">
