@@ -12,7 +12,7 @@ type Match = {
 
 export default function MatchesClient({ matches: initialMatches }: { matches: Match[] }) {
   const [matches, setMatches] = useState<Match[]>(initialMatches || [])
-  const [form, setForm] = useState({ date: '', opponent: '', venue: 'Home', overs: 40, matchType: 'League'})
+  const [form, setForm] = useState({ date: '', opponent: '', venue: 'Home', overs: 40, matchType: 'Home and Home'})
   const [loading, setLoading] = useState(false)
 
   function onChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -32,7 +32,7 @@ export default function MatchesClient({ matches: initialMatches }: { matches: Ma
       if (!res.ok) throw new Error('Failed')
       const created = await res.json()
       setMatches((m) => [created, ...m])
-      setForm({ date: '', opponent: '', venue: 'Home', overs: 40, matchType: 'League' })
+      setForm({ date: '', opponent: '', venue: 'Home', overs: 40, matchType: 'Home and Home' })
     } catch (err) {
       console.error(err)
       alert('Failed to create match')
