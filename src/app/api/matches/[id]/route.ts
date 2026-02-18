@@ -4,12 +4,12 @@ import Match from '@/models/Match';
 
 export async function DELETE(
     request:Request,
-    context : {params:{id:string}}
+    context : {params:Promise<{id:string}>}
 ){
     try{
         await connectDB()
         
-        const {id} = context.params;
+        const {id} = await context.params;
 
         await Match.findByIdAndDelete(id)
 
