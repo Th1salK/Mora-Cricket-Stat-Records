@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Match from '@/models/Match';
 
-export async function DeleteMatch(
+export async function DELETE(
     request:Request,
     {params} : {params:{id:string}}
 ){
