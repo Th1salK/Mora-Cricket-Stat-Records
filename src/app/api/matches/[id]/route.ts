@@ -4,14 +4,16 @@ import Match from '@/models/Match';
 
 export async function DELETE(
     request:Request,
-    {params} : {params:{id:string}}
+    context : {params:{id:string}}
 ){
     try{
         await connectDB()
         
-        await Match.findByIdAndDelete(params.id)
+        const {id} = context.params;
 
-        return NextResponse.json({success:true})
+        await Match.findByIdAndDelete(id)
+
+        return NextResponse.json({message:'Match Deleted Succesfully'})
     
     }catch(error:any)
     {
