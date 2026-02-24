@@ -157,8 +157,8 @@ export default function MatchesClient({
               onChange={onChange}
               className="glass-select w-full"
             >
-              <option>Home</option>
-              <option>Away</option>
+              <option value="Home">Home</option>
+              <option value="Away">Away</option>
             </select>
           </div>
 
@@ -182,11 +182,11 @@ export default function MatchesClient({
               onChange={onChange}
               className="glass-select w-full"
             >
-              <option>Home and Home</option>
-              <option>Practice</option>
-              <option>Div 3</option>
-              <option>Inter Uni</option>
-              <option>SLUG</option>
+              <option value="Home and Home">Home and Home</option>
+              <option value="Practice">Practice</option>
+              <option value="Div 3">Div 3</option>
+              <option value="Inter Uni">Inter Uni</option>
+              <option value="SLUG">SLUG</option>
             </select>
           </div>
 
