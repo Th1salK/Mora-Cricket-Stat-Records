@@ -23,8 +23,8 @@ export default async function Page() {
   const matches: Match[] = (await matchesRes.json()) || []
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Enter Stats (Phase 1)</h1>
+    <div className="space-y-6">
+      <h1 className="text-white text-2xl font-bold">Stats Entry</h1>
       <StatsEntryClient players={players} matches={matches} />
     </div>
   )

@@ -30,10 +30,10 @@ export default function PlayersClient({ players: initialPlayers }: { players: Pl
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, bowlingStyle: form.bowlingStyle || null }),
       })
-      
-      if (!res.ok){
+
+      if (!res.ok) {
         const errorData = await res.json()
-        console.error("API ERROR:",errorData)
+        console.error("API ERROR:", errorData)
         throw new Error(errorData.error || 'Failed')
       }
 
@@ -49,20 +49,35 @@ export default function PlayersClient({ players: initialPlayers }: { players: Pl
   }
 
   return (
-    <div className="text-black space-y-6">
-      <form onSubmit={onSubmit} className="p-4 border rounded bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div className="space-y-6">
+      <form onSubmit={onSubmit} className="glass p-6">
+        <h2 className="text-yellow-400 font-bold text-lg mb-4">Add Player</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium">Full Name</label>
-            <input name="fullName" value={form.fullName} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Full Name</label>
+            <input
+              name="fullName"
+              value={form.fullName}
+              onChange={onChange}
+              placeholder="Full name"
+              className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              required
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium">Short Name</label>
-            <input name="shortName" value={form.shortName} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Short Name</label>
+            <input
+              name="shortName"
+              value={form.shortName}
+              onChange={onChange}
+              placeholder="Short name"
+              className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              required
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium">Role</label>
-            <select name="role" value={form.role} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1">
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Role</label>
+            <select name="role" value={form.role} onChange={onChange} className="glass-select w-full">
               <option>Batsman</option>
               <option>Bowler</option>
               <option>All-rounder</option>
@@ -70,54 +85,63 @@ export default function PlayersClient({ players: initialPlayers }: { players: Pl
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium">Batting Style</label>
-            <select name="battingStyle" value={form.battingStyle} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1">
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Batting Style</label>
+            <select name="battingStyle" value={form.battingStyle} onChange={onChange} className="glass-select w-full">
               <option>Right Hand Bat</option>
               <option>Left Hand Bat</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium">Bowling Style</label>
-            <input name="bowlingStyle" value={form.bowlingStyle} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Bowling Style</label>
+            <input
+              name="bowlingStyle"
+              value={form.bowlingStyle}
+              onChange={onChange}
+              placeholder="e.g. Right Arm Medium"
+              className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
           </div>
           <div className="flex items-end">
-            <button disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded">
+            <button
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg px-4 py-2 transition-colors"
+            >
               {loading ? 'Adding...' : 'Add Player'}
             </button>
           </div>
         </div>
       </form>
 
-      <div className="overflow-x-auto bg-white border rounded">
+      <div className="glass overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="border-b border-white/10">
             <tr>
-              <th className="px-4 py-2 text-left">Full Name</th>
-              <th className="px-4 py-2 text-left">Short Name</th>
-              <th className="px-4 py-2 text-left">Role</th>
-              <th className="px-4 py-2 text-left">Batting Style</th>
-              <th className="px-4 py-2 text-left">Bowling Style</th>
-              <th className="px-4 py-2 text-left">Active</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Full Name</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Short Name</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Role</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Batting Style</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Bowling Style</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Active</th>
             </tr>
           </thead>
           <tbody>
             {players.map((p) => (
-              <tr key={p._id} className="border-t">
-                <td className="px-4 py-2">
-                  <Link href={`/players/${p._id}`} className="text-blue-600 hover:underline hover:text-blue-700 cursor-pointer">
+              <tr key={p._id} className="border-b border-white/5 hover:bg-blue-900/10 transition-colors">
+                <td className="px-4 py-3 text-slate-300 text-sm">
+                  <Link href={`/players/${p._id}`} className="text-blue-400 hover:text-blue-300 hover:underline cursor-pointer">
                     {p.fullName}
                   </Link>
                 </td>
-                <td className="px-4 py-2">{p.shortName}</td>
-                <td className="px-4 py-2">{p.role}</td>
-                <td className="px-4 py-2">{p.battingStyle ?? '-'}</td>
-                <td className="px-4 py-2">{p.bowlingStyle ?? '-'}</td>
-                <td className="px-4 py-2">{p.isActive ? 'Yes' : 'No'}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm">{p.shortName}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm">{p.role}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm">{p.battingStyle ?? '-'}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm">{p.bowlingStyle ?? '-'}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm">{p.isActive ? 'Yes' : 'No'}</td>
               </tr>
             ))}
             {players.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                   No players yet
                 </td>
               </tr>

@@ -1,28 +1,61 @@
 import Link from 'next/link'
 
 export default function Home() {
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-5xl mx-auto space-y-10">
-        {/* Team Header */}
-        <header className="text-center">
-          <div className="mx-auto w-28 h-28 rounded-full overflow-hidden bg-white shadow flex items-center justify-center">
-            <img src="https://via.placeholder.com/96?text=M" alt="Mora Cricket Team" className="w-full h-full object-cover" />
-          </div>
-          <h1 className="mt-4 text-3xl font-extrabold text-gray-900">Mora Cricket Team</h1>
-        </header>
+    <div className="space-y-8">
+      {/* Team Header */}
+      <header>
+        <h1 className="text-white text-2xl font-bold">Mora Cricket Team</h1>
+        <p className="text-slate-400 text-sm mt-1">Statistics Dashboard</p>
+      </header>
 
-        {/* Quick Actions */}
-        <section className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div>
-            <Link href="/stats/enter" className="inline-block bg-blue-600 text-white px-5 py-3 rounded-md text-sm font-medium hover:bg-blue-700">
-              Enter Match Stats
-            </Link>
-          </div>
-        </section>
-      </div>
+      {/* Quick Actions */}
+      <section>
+        <h2 className="text-white text-lg font-semibold border-l-4 border-yellow-400 pl-3 mb-4">
+          Quick Actions
+        </h2>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/stats/enter"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg px-5 py-3 transition-colors text-sm"
+          >
+            Enter Match Stats
+          </Link>
+          <Link
+            href="/career"
+            className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/40 font-semibold rounded-lg px-5 py-3 transition-colors text-sm"
+          >
+            Career Overview
+          </Link>
+          <Link
+            href="/matches"
+            className="bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 font-semibold rounded-lg px-5 py-3 transition-colors text-sm"
+          >
+            View Matches
+          </Link>
+        </div>
+      </section>
+
+      {/* Navigation Cards */}
+      <section>
+        <h2 className="text-white text-lg font-semibold border-l-4 border-yellow-400 pl-3 mb-4">
+          Stats
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link href="/stats/batting" className="glass glass-hover p-5 block">
+            <div className="text-yellow-400 text-xl font-bold mb-1">Batting</div>
+            <div className="text-slate-400 text-sm">View batting statistics by format</div>
+          </Link>
+          <Link href="/stats/bowling" className="glass glass-hover p-5 block">
+            <div className="text-yellow-400 text-xl font-bold mb-1">Bowling</div>
+            <div className="text-slate-400 text-sm">View bowling statistics by format</div>
+          </Link>
+          <Link href="/career" className="glass glass-hover p-5 block">
+            <div className="text-yellow-400 text-xl font-bold mb-1">Career</div>
+            <div className="text-slate-400 text-sm">All-time stats across all formats</div>
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }

@@ -16,8 +16,8 @@ export default async function Page() {
   const players: Player[] = data.players ?? []
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold text-b mb-4">Players</h1>
+    <div className="space-y-6">
+      <h1 className="text-white text-2xl font-bold">Players</h1>
       <PlayersClient players={players} />
     </div>
   )

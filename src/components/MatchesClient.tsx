@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { getMatchTypeBadgeClass } from "../lib/matchTypeBadge"
 
 type Match = {
   _id?: string
@@ -59,13 +60,11 @@ export default function MatchesClient({
       const result = await res.json()
 
       if (editingId) {
-        // Update locally
         setMatches((prev) =>
           prev.map((m) => (m._id === editingId ? result : m))
         )
         setEditingId(null)
       } else {
-        // Add locally
         setMatches((prev) => [result, ...prev])
       }
 
@@ -81,7 +80,7 @@ export default function MatchesClient({
   function handleEdit(match: Match) {
     setEditingId(match._id!)
     setForm({
-      date: match.date.split("T")[0], // Fix ISO date
+      date: match.date.split("T")[0],
       opponent: match.opponent,
       venue: match.venue,
       overs: match.overs,
@@ -117,113 +116,143 @@ export default function MatchesClient({
   }
 
   return (
-    <div className="text-black space-y-6">
+    <div className="space-y-6">
 
       {/* FORM */}
-      <form onSubmit={onSubmit} className="p-4 border rounded bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <form onSubmit={onSubmit} className="glass p-6">
+        <h2 className="text-yellow-400 font-bold text-lg mb-4">
+          {editingId ? "Edit Match" : "Add Match"}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-          <input
-            type="date"
-            name="date"
-            value={form.date}
-            onChange={onChange}
-            className="border rounded px-2 py-1"
-            required
-          />
+          <div>
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Date</label>
+            <input
+              type="date"
+              name="date"
+              value={form.date}
+              onChange={onChange}
+              className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              required
+            />
+          </div>
 
-          <input
-            name="opponent"
-            value={form.opponent}
-            onChange={onChange}
-            placeholder="Opponent"
-            className="border rounded px-2 py-1"
-            required
-          />
+          <div>
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Opponent</label>
+            <input
+              name="opponent"
+              value={form.opponent}
+              onChange={onChange}
+              placeholder="Opponent"
+              className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              required
+            />
+          </div>
 
-          <select
-            name="venue"
-            value={form.venue}
-            onChange={onChange}
-            className="border rounded px-2 py-1"
-          >
-            <option>Home</option>
-            <option>Away</option>
-          </select>
+          <div>
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Venue</label>
+            <select
+              name="venue"
+              value={form.venue}
+              onChange={onChange}
+              className="glass-select w-full"
+            >
+              <option>Home</option>
+              <option>Away</option>
+            </select>
+          </div>
 
-          <input
-            type="number"
-            name="overs"
-            min={1}
-            value={form.overs}
-            onChange={onChange}
-            className="border rounded px-2 py-1"
-          />
+          <div>
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Overs</label>
+            <input
+              type="number"
+              name="overs"
+              min={1}
+              value={form.overs}
+              onChange={onChange}
+              className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+          </div>
 
-          <select
-            name="matchType"
-            value={form.matchType}
-            onChange={onChange}
-            className="border rounded px-2 py-1"
-          >
-            <option>Home and Home</option>
-            <option>Practice</option>
-            <option>Div 3</option>
-            <option>Inter Uni</option>
-            <option>SLUG</option>
-          </select>
+          <div>
+            <label className="block text-yellow-400 text-sm font-medium mb-1">Match Type</label>
+            <select
+              name="matchType"
+              value={form.matchType}
+              onChange={onChange}
+              className="glass-select w-full"
+            >
+              <option>Home and Home</option>
+              <option>Practice</option>
+              <option>Div 3</option>
+              <option>Inter Uni</option>
+              <option>SLUG</option>
+            </select>
+          </div>
 
-          <button
-            disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            {editingId
-              ? loading
-                ? "Updating..."
-                : "Update Match"
-              : loading
-              ? "Adding..."
-              : "Add Match"}
-          </button>
+          <div className="flex items-end gap-2">
+            <button
+              disabled={loading}
+              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg px-4 py-2 transition-colors"
+            >
+              {editingId
+                ? loading ? "Updating..." : "Update Match"
+                : loading ? "Adding..." : "Add Match"}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={() => { resetForm(); setEditingId(null) }}
+                className="flex-1 border border-slate-600 text-slate-400 hover:text-white rounded-lg px-4 py-2 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+
         </div>
       </form>
 
       {/* TABLE */}
-      <div className="overflow-x-auto bg-white border rounded">
+      <div className="glass overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="border-b border-white/10">
             <tr>
-              <th className="px-4 py-2 text-left">Date</th>
-              <th className="px-4 py-2 text-left">Opponent</th>
-              <th className="px-4 py-2 text-left">Venue</th>
-              <th className="px-4 py-2 text-left">Overs</th>
-              <th className="px-4 py-2 text-left">Type</th>
-              <th className="px-4 py-2 text-left">Actions</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Date</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Opponent</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Venue</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Overs</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Type</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {matches.map((m) => (
-              <tr key={m._id} className="border-t">
-                <td className="px-4 py-2">
+              <tr key={m._id} className="border-b border-white/5 hover:bg-blue-900/10 transition-colors">
+                <td className="px-4 py-3 text-slate-300 text-sm">
                   {new Date(m.date).toLocaleDateString()}
                 </td>
-                <td className="px-4 py-2">{m.opponent}</td>
-                <td className="px-4 py-2">{m.venue}</td>
-                <td className="px-4 py-2">{m.overs}</td>
-                <td className="px-4 py-2">{m.matchType}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm">{m.opponent}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm">{m.venue}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm">{m.overs}</td>
+                <td className="px-4 py-3">
+                  <span className={getMatchTypeBadgeClass(m.matchType)}>
+                    {m.matchType}
+                  </span>
+                </td>
 
-                <td className="px-4 py-2 space-x-2">
+                <td className="px-4 py-3 space-x-2">
                   <button
                     onClick={() => handleEdit(m)}
-                    className="px-2 py-1 bg-yellow-500 text-white rounded"
+                    className="px-3 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 rounded hover:bg-yellow-500/30 transition-colors text-sm"
                   >
                     Edit
                   </button>
 
                   <button
                     onClick={() => handleDelete(m._id!)}
-                    className="px-2 py-1 bg-red-600 text-white rounded"
+                    className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/40 rounded hover:bg-red-500/30 transition-colors text-sm"
                   >
                     Delete
                   </button>
@@ -233,7 +262,7 @@ export default function MatchesClient({
 
             {matches.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-6 text-gray-500">
+                <td colSpan={6} className="text-center py-8 text-slate-500">
                   No matches yet
                 </td>
               </tr>

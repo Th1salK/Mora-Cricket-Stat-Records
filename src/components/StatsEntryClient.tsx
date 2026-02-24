@@ -8,7 +8,7 @@ export default function StatsEntryClient({ players, matches }: { players: Player
   const [matchList, setMatchList] = useState<Match[]>(matches || [])
   const [selectedMatchId, setSelectedMatchId] = useState<string>('')
   const [addingNew, setAddingNew] = useState(false)
-  const [newMatch, setNewMatch] = useState({ date: '', opponent: '', venue: 'Home', overs: 40, matchType: 'League' })
+  const [newMatch, setNewMatch] = useState({ date: '', opponent: '', venue: 'Home', overs: 40, matchType: 'Home and Home' })
 
   const [entries, setEntries] = useState(() =>
     (players || []).map((p) => ({ playerId: p._id, runs: '', balls: '', fours: '', sixes: '', out: false }))
@@ -116,13 +116,20 @@ export default function StatsEntryClient({ players, matches }: { players: Player
     }
   }
 
+  const inputCls = "border rounded px-2 py-1 w-20 bg-white/5 border-blue-500/30 text-white focus:border-blue-400 focus:outline-none disabled:opacity-40"
+
   return (
-    <div className="text-black space-y-6">
-      <div className="p-4 border rounded bg-white">
-        <label className="block text-sm font-medium mb-2">Select Match</label>
-        <select value={selectedMatchId || ''} onChange={onSelectChange} className="block w-full border rounded px-2 py-1 text-black">
+    <div className="space-y-6">
+      {/* Match Selector */}
+      <div className="glass p-6">
+        <label className="block text-yellow-400 text-sm font-medium mb-2">Select Match</label>
+        <select
+          value={selectedMatchId || ''}
+          onChange={onSelectChange}
+          className="glass-select w-full max-w-sm"
+        >
           <option value="">-- Select a match --</option>
-          <option value="add">Add new match</option>
+          <option value="add">+ Add new match</option>
           {matchList.map((m) => (
             <option key={m._id} value={m._id}>
               {new Date(m.date).toLocaleDateString()} - {m.opponent}
@@ -131,59 +138,122 @@ export default function StatsEntryClient({ players, matches }: { players: Player
         </select>
 
         {addingNew && (
-          <form onSubmit={createMatch} className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <form onSubmit={createMatch} className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium">Date</label>
-              <input type="date" name="date" value={newMatch.date} onChange={onNewChange} className="mt-1 block w-full border rounded px-2 py-1" />
+              <label className="block text-yellow-400 text-sm font-medium mb-1">Date</label>
+              <input
+                type="date"
+                name="date"
+                value={newMatch.date}
+                onChange={onNewChange}
+                className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                required
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium">Opponent</label>
-              <input name="opponent" value={newMatch.opponent} onChange={onNewChange} className="mt-1 block w-full border rounded px-2 py-1" />
+              <label className="block text-yellow-400 text-sm font-medium mb-1">Opponent</label>
+              <input
+                name="opponent"
+                value={newMatch.opponent}
+                onChange={onNewChange}
+                placeholder="Opponent"
+                className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-yellow-400 text-sm font-medium mb-1">Venue</label>
+              <select name="venue" value={newMatch.venue} onChange={onNewChange} className="glass-select w-full">
+                <option>Home</option>
+                <option>Away</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-yellow-400 text-sm font-medium mb-1">Overs</label>
+              <input
+                type="number"
+                name="overs"
+                min={1}
+                value={newMatch.overs}
+                onChange={onNewChange}
+                className="w-full bg-white/5 border border-blue-500/30 rounded-lg px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-yellow-400 text-sm font-medium mb-1">Match Type</label>
+              <select name="matchType" value={newMatch.matchType} onChange={onNewChange} className="glass-select w-full">
+                <option>Home and Home</option>
+                <option>Practice</option>
+                <option>Div 3</option>
+                <option>Inter Uni</option>
+                <option>SLUG</option>
+              </select>
             </div>
             <div className="flex items-end">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded">Create Match</button>
+              <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg px-4 py-2 transition-colors">
+                Create Match
+              </button>
             </div>
           </form>
         )}
       </div>
 
-      <div className="p-4 border rounded bg-white">
-        <h2 className="text-lg font-medium mb-3">Batting Entry</h2>
-        <p className="text-sm mb-4">Select a match to enable stat entry.</p>
+      {/* Batting Entry */}
+      <div className="glass p-6">
+        <h2 className="text-white text-lg font-semibold border-l-4 border-yellow-400 pl-3 mb-4">
+          Batting Entry
+        </h2>
+        {!selectedMatchId && (
+          <p className="text-slate-500 text-sm mb-4">Select a match to enable stat entry.</p>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="border-b border-white/10">
               <tr>
-                <th className="px-3 py-2 text-left">Player</th>
-                <th className="px-3 py-2 text-left">Runs</th>
-                <th className="px-3 py-2 text-left">Balls</th>
-                <th className="px-3 py-2 text-left">Fours</th>
-                <th className="px-3 py-2 text-left">Sixes</th>
-                <th className="px-3 py-2 text-left">Out</th>
-                <th className="px-3 py-2 text-left">Action</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Player</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Runs</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Balls</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">4s</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">6s</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Out</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Action</th>
               </tr>
             </thead>
             <tbody>
               {players.map((p, i) => (
-                <tr key={p._id} className="border-t">
-                  <td className={`px-3 py-2 ${!selectedMatchId ? 'text-gray-400' : 'text-black'}`}>{p.fullName}</td>
+                <tr key={p._id} className="border-b border-white/5 hover:bg-blue-900/10 transition-colors">
+                  <td className={`px-3 py-2 text-sm ${!selectedMatchId ? 'text-slate-600' : 'text-slate-300'}`}>{p.fullName}</td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={entries[i]?.runs} onChange={(e) => onEntryChange(i, 'runs', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={entries[i]?.runs} onChange={(e) => onEntryChange(i, 'runs', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={entries[i]?.balls} onChange={(e) => onEntryChange(i, 'balls', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={entries[i]?.balls} onChange={(e) => onEntryChange(i, 'balls', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={entries[i]?.fours} onChange={(e) => onEntryChange(i, 'fours', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={entries[i]?.fours} onChange={(e) => onEntryChange(i, 'fours', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={entries[i]?.sixes} onChange={(e) => onEntryChange(i, 'sixes', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={entries[i]?.sixes} onChange={(e) => onEntryChange(i, 'sixes', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <input type="checkbox" disabled={!selectedMatchId} checked={entries[i]?.out} onChange={(e) => onEntryChange(i, 'out', e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      disabled={!selectedMatchId}
+                      checked={entries[i]?.out}
+                      onChange={(e) => onEntryChange(i, 'out', e.target.checked)}
+                      className="accent-yellow-400"
+                    />
                   </td>
                   <td className="px-3 py-2">
-                    <button disabled={!selectedMatchId} onClick={() => submitEntry(i)} className={`px-3 py-1 rounded ${!selectedMatchId ? 'bg-gray-300' : 'bg-green-600 text-white'}`}>
+                    <button
+                      disabled={!selectedMatchId}
+                      onClick={() => submitEntry(i)}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                        !selectedMatchId
+                          ? 'bg-white/5 text-slate-600 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-500 text-white'
+                      }`}
+                    >
                       Save
                     </button>
                   </td>
@@ -194,44 +264,56 @@ export default function StatsEntryClient({ players, matches }: { players: Player
         </div>
       </div>
 
-      {/* Bowling Section */}
-      <div className="p-4 border rounded bg-white">
-        <h2 className="text-lg font-medium mb-3">Bowling</h2>
-        <p className="text-sm mb-4">Enter bowling figures for the selected match.</p>
+      {/* Bowling Entry */}
+      <div className="glass p-6">
+        <h2 className="text-white text-lg font-semibold border-l-4 border-yellow-400 pl-3 mb-4">
+          Bowling Entry
+        </h2>
+        {!selectedMatchId && (
+          <p className="text-slate-500 text-sm mb-4">Enter bowling figures for the selected match.</p>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="border-b border-white/10">
               <tr>
-                <th className="px-3 py-2 text-left">Player</th>
-                <th className="px-3 py-2 text-left">Balls</th>
-                <th className="px-3 py-2 text-left">Runs</th>
-                <th className="px-3 py-2 text-left">Wickets</th>
-                <th className="px-3 py-2 text-left">Wides</th>
-                <th className="px-3 py-2 text-left">No Balls</th>
-                <th className="px-3 py-2 text-left">Action</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Player</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Balls</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Runs</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Wickets</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Wides</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">No Balls</th>
+                <th className="px-3 py-2 text-left text-yellow-400 font-semibold">Action</th>
               </tr>
             </thead>
             <tbody>
               {players.map((p, i) => (
-                <tr key={p._id} className="border-t">
-                  <td className={`px-3 py-2 ${!selectedMatchId ? 'text-gray-400' : 'text-black'}`}>{p.fullName}</td>
+                <tr key={p._id} className="border-b border-white/5 hover:bg-blue-900/10 transition-colors">
+                  <td className={`px-3 py-2 text-sm ${!selectedMatchId ? 'text-slate-600' : 'text-slate-300'}`}>{p.fullName}</td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.balls} onChange={(e) => onBowlingChange(i, 'balls', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.balls} onChange={(e) => onBowlingChange(i, 'balls', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.runs} onChange={(e) => onBowlingChange(i, 'runs', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.runs} onChange={(e) => onBowlingChange(i, 'runs', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.wickets} onChange={(e) => onBowlingChange(i, 'wickets', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.wickets} onChange={(e) => onBowlingChange(i, 'wickets', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.wides} onChange={(e) => onBowlingChange(i, 'wides', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.wides} onChange={(e) => onBowlingChange(i, 'wides', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.noBalls} onChange={(e) => onBowlingChange(i, 'noBalls', e.target.value)} className="border rounded px-2 py-1 w-20" />
+                    <input disabled={!selectedMatchId} value={bowlingEntries[i]?.noBalls} onChange={(e) => onBowlingChange(i, 'noBalls', e.target.value)} className={inputCls} />
                   </td>
                   <td className="px-3 py-2">
-                    <button disabled={!selectedMatchId} onClick={() => submitBowling(i)} className={`px-3 py-1 rounded ${!selectedMatchId ? 'bg-gray-300' : 'bg-blue-600 text-white'}`}>
+                    <button
+                      disabled={!selectedMatchId}
+                      onClick={() => submitBowling(i)}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                        !selectedMatchId
+                          ? 'bg-white/5 text-slate-600 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-500 text-white'
+                      }`}
+                    >
                       Save
                     </button>
                   </td>

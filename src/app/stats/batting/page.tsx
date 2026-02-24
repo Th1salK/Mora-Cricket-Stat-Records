@@ -1,58 +1,74 @@
-type BattingStat = {
-  playerId: string
-  fullName?: string
-  matches?: number
-  runs?: number
-  balls?: number
-  fours?: number
-  sixes?: number
-  outs?: number
-  average?: number | null
-  strikeRate?: number
+'use client'
+
+import { useEffect, useState } from 'react'
+import MatchTypeDropdown from '../../../components/MatchTypeDropdown'
+import StatCard from '../../../components/StatCard'
+
+interface BattingStats {
+  totalInnings: number
+  totalRuns: number
+  totalBalls: number
+  average: number
+  strikeRate: number
+  highScore: number
+  notOuts: number
+  ducks: number
+  totalFours: number
+  totalSixes: number
+  fifties: number
+  hundreds: number
 }
 
-export default async function Page() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/stats/batting`, { cache: 'no-store' })
-  const data: BattingStat[] = (await res.json()) || []
+export default function BattingStatsPage() {
+  const [matchType, setMatchType] = useState('All')
+  const [stats, setStats] = useState<BattingStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const stats = Array.isArray(data) ? data.sort((a, b) => (b.runs || 0) - (a.runs || 0)) : []
+  useEffect(() => {
+    setLoading(true)
+    const url =
+      matchType === 'All'
+        ? '/api/stats/batting'
+        : `/api/stats/batting?matchType=${encodeURIComponent(matchType)}`
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => {
+        setStats(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [matchType])
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Batting Stats</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-white text-2xl font-bold">Batting Stats</h1>
+          <p className="text-slate-400 text-sm mt-1">Aggregated batting performance</p>
+        </div>
+        <MatchTypeDropdown value={matchType} onChange={setMatchType} includeAll />
+      </div>
 
-      {stats.length === 0 ? (
-        <div className="p-4 bg-white border rounded text-gray-600">No stats yet</div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : !stats ? (
+        <div className="glass p-6 text-slate-400 text-center">No stats available</div>
       ) : (
-        <div className="overflow-x-auto bg-white border rounded text-black">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left">Player</th>
-                <th className="px-4 py-2 text-right">Runs</th>
-                <th className="px-4 py-2 text-right">Balls</th>
-                <th className="px-4 py-2 text-right">Outs</th>
-                <th className="px-4 py-2 text-right">Average</th>
-                <th className="px-4 py-2 text-right">Strike Rate</th>
-                <th className="px-4 py-2 text-right">4s</th>
-                <th className="px-4 py-2 text-right">6s</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.map((s) => (
-                <tr key={s.playerId} className="border-t">
-                  <td className="px-4 py-2">{s.fullName ?? 'Unknown'}</td>
-                  <td className="px-4 py-2 text-right">{s.runs ?? 0}</td>
-                  <td className="px-4 py-2 text-right">{s.balls ?? 0}</td>
-                  <td className="px-4 py-2 text-right">{s.outs ?? 0}</td>
-                  <td className="px-4 py-2 text-right">{s.average == null ? '-' : Number(s.average).toFixed(2)}</td>
-                  <td className="px-4 py-2 text-right">{s.strikeRate == null ? '-' : Number(s.strikeRate).toFixed(2)}</td>
-                  <td className="px-4 py-2 text-right">{s.fours ?? 0}</td>
-                  <td className="px-4 py-2 text-right">{s.sixes ?? 0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <StatCard label="Total Innings" value={stats.totalInnings} />
+          <StatCard label="Total Runs" value={stats.totalRuns} />
+          <StatCard label="Average" value={stats.average === 0 ? '-' : stats.average} />
+          <StatCard label="Strike Rate" value={stats.strikeRate === 0 ? '-' : stats.strikeRate} />
+          <StatCard label="Highest Score" value={stats.highScore} />
+          <StatCard label="Not Outs" value={stats.notOuts} />
+          <StatCard label="Ducks" value={stats.ducks} />
+          <StatCard label="50s" value={stats.fifties} />
+          <StatCard label="100s" value={stats.hundreds} />
+          <StatCard label="Total Fours" value={stats.totalFours} />
+          <StatCard label="Total Sixes" value={stats.totalSixes} />
         </div>
       )}
     </div>
