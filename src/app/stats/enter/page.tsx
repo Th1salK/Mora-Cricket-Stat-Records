@@ -1,18 +1,19 @@
 import StatsEntryClient from '../../../components/StatsEntryClient'
 
 type Player = {
-  _id?: string
+  _id: string
   fullName: string
-  shortName: string
+  role: 'Batsman' | 'Bowler' | 'All-rounder' | 'Wicket-keeper'
+  isActive: boolean
 }
 
 type Match = {
-  _id?: string
+  _id: string
   date: string
   opponent: string
-  venue: string
+  venue: 'Home' | 'Away'
   overs: number
-  matchType: string
+  matchType: 'Home and Home' | 'Practice' | 'Div 3' | 'Inter Uni' | 'SLUG'
 }
 
 export default async function Page() {
