@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../../lib/mongodb'
-import { getBattingStats, getBowlingStats, MATCH_TYPES } from '../../../../lib/statsCalculator'
+import { getPlayerBattingStats, getPlayerBowlingStats, MATCH_TYPES } from '../../../../lib/statsCalculator'
 import Match from '../../../../models/Match'
 
 export async function GET() {
@@ -11,8 +11,8 @@ export async function GET() {
 
     for (const matchType of MATCH_TYPES) {
       const matchCount = await Match.countDocuments({ matchType })
-      const batting = await getBattingStats(matchType)
-      const bowling = await getBowlingStats(matchType)
+      const batting = await getPlayerBattingStats(matchType)
+      const bowling = await getPlayerBowlingStats(matchType)
       result[matchType] = { batting, bowling, matchCount }
     }
 
