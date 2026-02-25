@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../lib/mongodb'
 import BowlingPerformance from '../../../models/BowlingPerformance'
+import { isAdmin } from '../../../lib/auth'
 
 export async function POST(request: Request) {
   try {
+    if (!(await isAdmin())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     await connectDB()
     const body = await request.json()
     const { matchId, playerId, balls = 0, runs = 0, wickets = 0, wides = 0, noBalls = 0 } = body

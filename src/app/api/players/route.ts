@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../lib/mongodb'
 import Player from '../../../models/Player'
+import { isAdmin } from '../../../lib/auth'
 
 export async function GET() {
   try {
@@ -14,6 +15,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!(await isAdmin())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     await connectDB()
     const body = await request.json()
     const { fullName, shortName, battingStyle, bowlingStyle, role, isActive } = body
@@ -29,6 +33,9 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    if (!(await isAdmin())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     await connectDB()
     const body = await request.json()
 
