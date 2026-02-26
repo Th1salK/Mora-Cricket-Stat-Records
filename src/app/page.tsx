@@ -14,22 +14,22 @@ export default function Home() {
         <h2 className="text-white text-lg font-semibold border-l-4 border-yellow-400 pl-3 mb-4">
           Quick Actions
         </h2>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
           <Link
             href="/stats/enter"
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg px-5 py-3 transition-colors text-sm"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg px-5 py-3 transition-colors text-sm text-center"
           >
             Enter Match Stats
           </Link>
           <Link
             href="/career"
-            className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/40 font-semibold rounded-lg px-5 py-3 transition-colors text-sm"
+            className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/40 font-semibold rounded-lg px-5 py-3 transition-colors text-sm text-center"
           >
             Career Overview
           </Link>
           <Link
             href="/matches"
-            className="bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 font-semibold rounded-lg px-5 py-3 transition-colors text-sm"
+            className="bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 font-semibold rounded-lg px-5 py-3 transition-colors text-sm text-center"
           >
             View Matches
           </Link>

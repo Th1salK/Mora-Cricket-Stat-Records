@@ -70,7 +70,7 @@ export default function BowlingStatsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-white text-2xl font-bold">Bowling Stats</h1>
           <p className="text-slate-400 text-sm mt-1">Per-player bowling performance</p>

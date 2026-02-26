@@ -224,8 +224,8 @@ export default function MatchesClient({
             <tr>
               <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Date</th>
               <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Opponent</th>
-              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Venue</th>
-              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Overs</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold hidden sm:table-cell">Venue</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold hidden sm:table-cell">Overs</th>
               <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Type</th>
               {isAdmin && <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Actions</th>}
             </tr>
@@ -238,8 +238,8 @@ export default function MatchesClient({
                   {new Date(m.date).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3 text-slate-300 text-sm">{m.opponent}</td>
-                <td className="px-4 py-3 text-slate-300 text-sm">{m.venue}</td>
-                <td className="px-4 py-3 text-slate-300 text-sm">{m.overs}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm hidden sm:table-cell">{m.venue}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm hidden sm:table-cell">{m.overs}</td>
                 <td className="px-4 py-3">
                   <span className={getMatchTypeBadgeClass(m.matchType)}>
                     {m.matchType}

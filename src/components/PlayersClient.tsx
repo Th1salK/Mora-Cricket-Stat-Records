@@ -117,11 +117,11 @@ export default function PlayersClient({ players: initialPlayers }: { players: Pl
           <thead className="border-b border-white/10">
             <tr>
               <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Full Name</th>
-              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Short Name</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold hidden sm:table-cell">Short Name</th>
               <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Role</th>
-              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Batting Style</th>
-              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Bowling Style</th>
-              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Active</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold hidden md:table-cell">Batting Style</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold hidden md:table-cell">Bowling Style</th>
+              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold hidden sm:table-cell">Active</th>
             </tr>
           </thead>
           <tbody>
@@ -132,11 +132,11 @@ export default function PlayersClient({ players: initialPlayers }: { players: Pl
                     {p.fullName}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-slate-300 text-sm">{p.shortName}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm hidden sm:table-cell">{p.shortName}</td>
                 <td className="px-4 py-3 text-slate-300 text-sm">{p.role}</td>
-                <td className="px-4 py-3 text-slate-300 text-sm">{p.battingStyle ?? '-'}</td>
-                <td className="px-4 py-3 text-slate-300 text-sm">{p.bowlingStyle ?? '-'}</td>
-                <td className="px-4 py-3 text-slate-300 text-sm">{p.isActive ? 'Yes' : 'No'}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm hidden md:table-cell">{p.battingStyle ?? '-'}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm hidden md:table-cell">{p.bowlingStyle ?? '-'}</td>
+                <td className="px-4 py-3 text-slate-300 text-sm hidden sm:table-cell">{p.isActive ? 'Yes' : 'No'}</td>
               </tr>
             ))}
             {players.length === 0 && (

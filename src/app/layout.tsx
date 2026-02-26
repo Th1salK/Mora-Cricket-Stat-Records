@@ -27,7 +27,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <div className="min-h-screen flex">
           <Sidebar isAdmin={admin} />
-          <main className="flex-1 p-6 bg-[#0a0a0f] min-h-screen">{children}</main>
+          <main className="flex-1 p-4 pt-[calc(3.5rem+1rem)] md:pt-6 md:p-6 bg-[#0a0a0f] min-h-screen">{children}</main>
         </div>
       </body>
     </html>

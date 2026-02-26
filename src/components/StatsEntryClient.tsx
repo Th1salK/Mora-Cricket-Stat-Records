@@ -81,7 +81,7 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div className={`h-0.5 w-12 mx-1 mb-4 transition-colors ${done ? 'bg-yellow-400' : 'bg-white/10'}`} />
+              <div className={`h-0.5 flex-1 min-w-4 mx-1 mb-4 transition-colors ${done ? 'bg-yellow-400' : 'bg-white/10'}`} />
             )}
           </div>
         )
@@ -440,7 +440,7 @@ export default function StatsEntryClient({
       {step === 3 && selectedMatch && (
         <>
           {/* Match + squad summary bar */}
-          <div className="glass p-4 flex flex-wrap items-center gap-4 text-sm">
+          <div className="glass p-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 text-sm">
             <div className="text-slate-400">
               Match:{' '}
               <span className="text-white font-medium">
@@ -452,7 +452,7 @@ export default function StatsEntryClient({
             </div>
             <button
               onClick={() => setStep(2)}
-              className="ml-auto text-blue-400 hover:text-blue-300 underline text-xs"
+              className="sm:ml-auto text-blue-400 hover:text-blue-300 underline text-xs self-start sm:self-auto"
             >
               Change Squad
             </button>
@@ -463,7 +463,47 @@ export default function StatsEntryClient({
             <h2 className="text-white text-lg font-semibold border-l-4 border-yellow-400 pl-3 mb-4">
               Batting Entry
             </h2>
-            <div className="overflow-x-auto">
+
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-4">
+              {selectedSquad.map((p, i) => (
+                <div key={p._id} className="glass-blue rounded-xl p-4 space-y-3">
+                  <div className="text-white font-medium text-sm">{p.fullName}</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['runs', 'balls', 'fours', 'sixes'] as const).map((field) => (
+                      <div key={field}>
+                        <label className="block text-yellow-400 text-xs mb-1 capitalize">{field === 'fours' ? '4s' : field === 'sixes' ? '6s' : field.charAt(0).toUpperCase() + field.slice(1)}</label>
+                        <input
+                          value={entries[i]?.[field] ?? ''}
+                          onChange={(e) => onEntryChange(i, field, e.target.value)}
+                          className="border rounded px-2 py-1 w-full bg-white/5 border-blue-500/30 text-white focus:border-blue-400 focus:outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={entries[i]?.out ?? false}
+                        onChange={(e) => onEntryChange(i, 'out', e.target.checked)}
+                        className="accent-yellow-400"
+                      />
+                      Out
+                    </label>
+                    <button
+                      onClick={() => submitEntry(i)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b border-white/10">
                   <tr>
@@ -516,7 +556,40 @@ export default function StatsEntryClient({
             <h2 className="text-white text-lg font-semibold border-l-4 border-yellow-400 pl-3 mb-4">
               Bowling Entry
             </h2>
-            <div className="overflow-x-auto">
+
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-4">
+              {selectedSquad.map((p, i) => (
+                <div key={p._id} className="glass-blue rounded-xl p-4 space-y-3">
+                  <div className="text-white font-medium text-sm">{p.fullName}</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['balls', 'runs', 'wickets', 'wides', 'noBalls'] as const).map((field) => (
+                      <div key={field}>
+                        <label className="block text-yellow-400 text-xs mb-1">
+                          {field === 'noBalls' ? 'No Balls' : field.charAt(0).toUpperCase() + field.slice(1)}
+                        </label>
+                        <input
+                          value={bowlingEntries[i]?.[field] ?? ''}
+                          onChange={(e) => onBowlingChange(i, field, e.target.value)}
+                          className="border rounded px-2 py-1 w-full bg-white/5 border-blue-500/30 text-white focus:border-blue-400 focus:outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => submitBowling(i)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b border-white/10">
                   <tr>

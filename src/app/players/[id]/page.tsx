@@ -169,30 +169,32 @@ export default function PlayerPage() {
       </button>
 
       {/* Player Header */}
-      <div className="glass p-6 flex items-center gap-6">
-        <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-900 flex items-center justify-center text-white text-2xl font-bold border border-blue-500/30">
-          {initials(player.fullName)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-white">{player.fullName}</h1>
-            {!player.isActive && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-red-600/20 text-red-400 border border-red-500/30">Inactive</span>
-            )}
+      <div className="glass p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+          <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-900 flex items-center justify-center text-white text-2xl font-bold border border-blue-500/30">
+            {initials(player.fullName)}
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadgeColor[player.role] ?? 'bg-slate-700 text-slate-300'}`}>
-              {player.role}
-            </span>
-            {player.battingStyle && (
-              <span className="text-slate-400">Bat: <span className="text-slate-200">{player.battingStyle}</span></span>
-            )}
-            {player.bowlingStyle && (
-              <span className="text-slate-400">Bowl: <span className="text-slate-200">{player.bowlingStyle}</span></span>
-            )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold text-white">{player.fullName}</h1>
+              {!player.isActive && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-red-600/20 text-red-400 border border-red-500/30">Inactive</span>
+              )}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadgeColor[player.role] ?? 'bg-slate-700 text-slate-300'}`}>
+                {player.role}
+              </span>
+              {player.battingStyle && (
+                <span className="text-slate-400">Bat: <span className="text-slate-200">{player.battingStyle}</span></span>
+              )}
+              {player.bowlingStyle && (
+                <span className="text-slate-400">Bowl: <span className="text-slate-200">{player.bowlingStyle}</span></span>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex-shrink-0">
+        <div className="mt-4 sm:mt-3">
           <MatchTypeDropdown value={matchType} onChange={(v) => setMatchType(v as MatchType)} />
         </div>
       </div>
