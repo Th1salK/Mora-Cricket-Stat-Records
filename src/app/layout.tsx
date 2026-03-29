@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import Sidebar from '../components/Sidebar'
-import { isAdmin } from '../lib/auth'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -19,14 +18,12 @@ export const metadata: Metadata = {
   description: 'Cricket statistics dashboard for Mora Cricket Team',
 }
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const admin = await isAdmin()
-
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <div className="min-h-screen flex">
-          <Sidebar isAdmin={admin} />
+          <Sidebar />
           <main className="flex-1 p-4 pt-[calc(3.5rem+1rem)] md:pt-6 md:p-6 bg-[#0a0a0f] min-h-screen">{children}</main>
         </div>
       </body>

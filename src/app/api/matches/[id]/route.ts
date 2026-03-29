@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../../lib/mongodb'
 import Match from '../../../../models/Match'
-import { isAdmin } from '../../../../lib/auth'
 
 export async function GET(
   request: Request,
@@ -23,9 +22,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!(await isAdmin())) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     await connectDB()
     const { id } = await params
     const body = await request.json()
@@ -53,9 +49,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!(await isAdmin())) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     await connectDB()
     const { id } = await params
     const deleted = await Match.findByIdAndDelete(id)

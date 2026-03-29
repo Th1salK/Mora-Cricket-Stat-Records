@@ -1,28 +1,22 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
-const publicLinks = [
+const links = [
   { href: '/',              label: 'Dashboard'    },
   { href: '/matches',       label: 'Matches'      },
   { href: '/players',       label: 'Players'      },
   { href: '/stats/batting', label: 'Batting Stats' },
   { href: '/stats/bowling', label: 'Bowling Stats' },
   { href: '/career',        label: 'Career'       },
+  { href: '/stats/enter',   label: 'Stats Entry'  },
 ]
 
-const adminLinks = [
-  { href: '/stats/enter', label: 'Stats Entry' },
-]
-
-export default function Sidebar({ isAdmin }: { isAdmin: boolean }) {
+export default function Sidebar() {
   const pathname = usePathname() || '/'
-  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
-
-  const links = isAdmin ? [...publicLinks, ...adminLinks] : publicLinks
 
   // Close drawer on route change
   useEffect(() => {
@@ -38,11 +32,6 @@ export default function Sidebar({ isAdmin }: { isAdmin: boolean }) {
     }
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
-
-  async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.refresh()
-  }
 
   const navContent = (
     <>
@@ -69,28 +58,6 @@ export default function Sidebar({ isAdmin }: { isAdmin: boolean }) {
           )
         })}
       </nav>
-
-      <div className="mt-4 border-t border-white/10 pt-4">
-        {isAdmin ? (
-          <button
-            onClick={handleLogout}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-blue-900/20 transition-colors"
-          >
-            Sign out
-          </button>
-        ) : (
-          <Link
-            href="/login"
-            className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
-              pathname === '/login'
-                ? 'text-yellow-400 bg-blue-900/30 border-l-2 border-yellow-400 pl-[10px]'
-                : 'text-slate-400 hover:text-white hover:bg-blue-900/20'
-            }`}
-          >
-            Admin login
-          </Link>
-        )}
-      </div>
     </>
   )
 
@@ -161,28 +128,6 @@ export default function Sidebar({ isAdmin }: { isAdmin: boolean }) {
             )
           })}
         </nav>
-
-        <div className="mt-4 border-t border-white/10 pt-4">
-          {isAdmin ? (
-            <button
-              onClick={handleLogout}
-              className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-blue-900/20 transition-colors"
-            >
-              Sign out
-            </button>
-          ) : (
-            <Link
-              href="/login"
-              className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
-                pathname === '/login'
-                  ? 'text-yellow-400 bg-blue-900/30 border-l-2 border-yellow-400 pl-[10px]'
-                  : 'text-slate-400 hover:text-white hover:bg-blue-900/20'
-              }`}
-            >
-              Admin login
-            </Link>
-          )}
-        </div>
       </aside>
     </>
   )
