@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../lib/mongodb'
+import { assertCanWrite } from '../../../lib/auth'
 import Match from '../../../models/Match'
 
 export async function GET() {
@@ -14,6 +15,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const denied = await assertCanWrite(request)
+    if (denied) return denied
+
     await connectDB()
     const body = await request.json()
     const { date, opponent, venue, overs, matchType} = body

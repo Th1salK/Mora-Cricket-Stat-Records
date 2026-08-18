@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../../lib/mongodb'
+import { assertCanWrite } from '../../../../lib/auth'
 import Match from '../../../../models/Match'
 
 export async function GET(
@@ -22,6 +23,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const denied = await assertCanWrite(request)
+    if (denied) return denied
+
     await connectDB()
     const { id } = await params
     const body = await request.json()
@@ -49,6 +53,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const denied = await assertCanWrite(request)
+    if (denied) return denied
+
     await connectDB()
     const { id } = await params
     const deleted = await Match.findByIdAndDelete(id)

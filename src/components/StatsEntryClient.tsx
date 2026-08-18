@@ -1,5 +1,6 @@
 "use client"
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 type MatchType = 'Home and Home' | 'Practice' | 'Div 3' | 'Inter Uni' | 'SLUG'
 
@@ -99,6 +100,15 @@ export default function StatsEntryClient({
 }) {
   // ---- Step state ----
   const [step, setStep] = useState<1 | 2 | 3>(1)
+  const router = useRouter()
+
+  function handleUnauthorized(res: Response): boolean {
+    if (res.status === 401) {
+      router.push('/login')
+      return true
+    }
+    return false
+  }
 
   // ---- Step 1: match ----
   const [matchList, setMatchList] = useState<Match[]>(initialMatches ?? [])
@@ -133,7 +143,10 @@ export default function StatsEntryClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newMatch),
       })
-      if (!res.ok) throw new Error('Failed')
+      if (!res.ok) {
+        if (handleUnauthorized(res)) return
+        throw new Error('Failed')
+      }
       const created: Match = await res.json()
       setMatchList((m) => [created, ...m])
       setSelectedMatch(created)
@@ -224,7 +237,10 @@ export default function StatsEntryClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!res.ok) throw new Error('Failed')
+      if (!res.ok) {
+        if (handleUnauthorized(res)) return
+        throw new Error('Failed')
+      }
       alert('Batting saved')
     } catch (err) {
       console.error(err)
@@ -250,7 +266,10 @@ export default function StatsEntryClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!res.ok) throw new Error('Failed')
+      if (!res.ok) {
+        if (handleUnauthorized(res)) return
+        throw new Error('Failed')
+      }
       alert('Bowling saved')
     } catch (err) {
       console.error(err)

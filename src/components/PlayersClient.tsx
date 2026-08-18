@@ -1,6 +1,7 @@
 "use client"
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 type Player = {
   _id?: string
@@ -12,10 +13,25 @@ type Player = {
   isActive?: boolean
 }
 
-export default function PlayersClient({ players: initialPlayers }: { players: Player[] }) {
+export default function PlayersClient({
+  players: initialPlayers,
+  isAdmin,
+}: {
+  players: Player[]
+  isAdmin: boolean
+}) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers || [])
   const [form, setForm] = useState({ fullName: '', shortName: '', role: 'Batsman', battingStyle: 'Right Hand Bat', bowlingStyle: '' })
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  function handleUnauthorized(res: Response): boolean {
+    if (res.status === 401) {
+      router.push('/login')
+      return true
+    }
+    return false
+  }
 
   function onChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -32,6 +48,7 @@ export default function PlayersClient({ players: initialPlayers }: { players: Pl
       })
 
       if (!res.ok) {
+        if (handleUnauthorized(res)) return
         const errorData = await res.json()
         console.error("API ERROR:", errorData)
         throw new Error(errorData.error || 'Failed')
@@ -50,7 +67,8 @@ export default function PlayersClient({ players: initialPlayers }: { players: Pl
 
   return (
     <div className="space-y-6">
-      <form onSubmit={onSubmit} className="glass p-6">
+      {isAdmin && (
+        <form onSubmit={onSubmit} className="glass p-6">
         <h2 className="text-yellow-400 font-bold text-lg mb-4">Add Player</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -110,7 +128,8 @@ export default function PlayersClient({ players: initialPlayers }: { players: Pl
             </button>
           </div>
         </div>
-      </form>
+        </form>
+      )}
 
       <div className="glass overflow-x-auto">
         <table className="min-w-full text-sm">
