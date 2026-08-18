@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { getMatchTypeBadgeClass } from "../lib/matchTypeBadge"
 
 type Match = {
@@ -14,12 +15,23 @@ type Match = {
 
 export default function MatchesClient({
   matches: initialMatches,
+  isAdmin,
 }: {
   matches: Match[]
+  isAdmin: boolean
 }) {
   const [matches, setMatches] = useState<Match[]>(initialMatches || [])
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const router = useRouter()
+
+  function handleUnauthorized(res: Response): boolean {
+    if (res.status === 401) {
+      router.push("/login")
+      return true
+    }
+    return false
+  }
 
   const [form, setForm] = useState<Match>({
     date: "",
@@ -55,7 +67,10 @@ export default function MatchesClient({
         body: JSON.stringify(form),
       })
 
-      if (!res.ok) throw new Error("Failed")
+      if (!res.ok) {
+        if (handleUnauthorized(res)) return
+        throw new Error("Failed")
+      }
 
       const result = await res.json()
 
@@ -96,7 +111,10 @@ export default function MatchesClient({
         method: "DELETE",
       })
 
-      if (!res.ok) throw new Error("Delete failed")
+      if (!res.ok) {
+        if (handleUnauthorized(res)) return
+        throw new Error("Delete failed")
+      }
 
       setMatches((prev) => prev.filter((m) => m._id !== id))
     } catch (err) {
@@ -118,8 +136,9 @@ export default function MatchesClient({
   return (
     <div className="space-y-6">
 
-      {/* FORM */}
-      <form onSubmit={onSubmit} className="glass p-6">
+      {/* FORM (admin only) */}
+      {isAdmin && (
+        <form onSubmit={onSubmit} className="glass p-6">
         <h2 className="text-yellow-400 font-bold text-lg mb-4">
           {editingId ? "Edit Match" : "Add Match"}
         </h2>
@@ -211,7 +230,8 @@ export default function MatchesClient({
           </div>
 
         </div>
-      </form>
+        </form>
+      )}
 
       {/* TABLE */}
       <div className="glass overflow-x-auto">
@@ -223,7 +243,9 @@ export default function MatchesClient({
               <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold hidden sm:table-cell">Venue</th>
               <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold hidden sm:table-cell">Overs</th>
               <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Type</th>
-              <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Actions</th>
+              {isAdmin && (
+                <th className="px-4 py-3 text-left text-yellow-400 text-sm font-semibold">Actions</th>
+              )}
             </tr>
           </thead>
 
@@ -242,27 +264,29 @@ export default function MatchesClient({
                   </span>
                 </td>
 
-                <td className="px-4 py-3 space-x-2">
-                  <button
-                    onClick={() => handleEdit(m)}
-                    className="px-3 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 rounded hover:bg-yellow-500/30 transition-colors text-sm"
-                  >
-                    Edit
-                  </button>
+                {isAdmin && (
+                  <td className="px-4 py-3 space-x-2">
+                    <button
+                      onClick={() => handleEdit(m)}
+                      className="px-3 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 rounded hover:bg-yellow-500/30 transition-colors text-sm"
+                    >
+                      Edit
+                    </button>
 
-                  <button
-                    onClick={() => handleDelete(m._id!)}
-                    className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/40 rounded hover:bg-red-500/30 transition-colors text-sm"
-                  >
-                    Delete
-                  </button>
-                </td>
+                    <button
+                      onClick={() => handleDelete(m._id!)}
+                      className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/40 rounded hover:bg-red-500/30 transition-colors text-sm"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
 
             {matches.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-slate-500">
+                <td colSpan={isAdmin ? 6 : 5} className="text-center py-8 text-slate-500">
                   No matches yet
                 </td>
               </tr>

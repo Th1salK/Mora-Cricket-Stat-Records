@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../../lib/mongodb'
+import { assertCanWrite } from '../../../../lib/auth'
 import Player from '../../../../models/Player'
 
 type Params = { params: Promise<{ id: string }> }
+
+const PLAYER_ALLOWED_FIELDS = ['fullName', 'shortName', 'battingStyle', 'bowlingStyle', 'role', 'isActive'] as const
 
 export async function GET(_req: Request, { params }: Params) {
   try {
@@ -18,10 +21,19 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function PUT(req: Request, { params }: Params) {
   try {
+    const denied = await assertCanWrite(req)
+    if (denied) return denied
+
     const { id } = await params
     await connectDB()
     const body = await req.json()
-    const player = await Player.findByIdAndUpdate(id, body, { new: true })
+
+    const updates: Record<string, unknown> = {}
+    for (const key of PLAYER_ALLOWED_FIELDS) {
+      if (key in body) updates[key] = body[key]
+    }
+
+    const player = await Player.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
     if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 })
     return NextResponse.json(player)
   } catch (err: any) {

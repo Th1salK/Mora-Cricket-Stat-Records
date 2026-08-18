@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../../../lib/mongodb'
+import { MatchType, MATCH_TYPES } from '../../../../../lib/statsCalculator'
 import BattingPerformance from '../../../../../models/BattingPerformance'
 import BowlingPerformance from '../../../../../models/BowlingPerformance'
 import Match from '../../../../../models/Match'
@@ -12,7 +13,12 @@ export async function GET(req: Request, { params }: Params) {
     await connectDB()
 
     const { searchParams } = new URL(req.url)
-    const matchType = searchParams.get('matchType') || 'All'
+    const matchTypeParam = searchParams.get('matchType') || 'All'
+
+    const validTypes: string[] = [...MATCH_TYPES, 'All']
+    const matchType: MatchType = validTypes.includes(matchTypeParam)
+      ? (matchTypeParam as MatchType)
+      : 'All'
 
     // Resolve match IDs filtered by matchType
     const matchFilter = matchType === 'All' ? {} : { matchType }

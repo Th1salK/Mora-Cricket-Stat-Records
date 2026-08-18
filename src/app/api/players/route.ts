@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '../../../lib/mongodb'
+import { assertCanWrite } from '../../../lib/auth'
 import Player from '../../../models/Player'
+
+const PLAYER_ALLOWED_FIELDS = ['fullName', 'shortName', 'battingStyle', 'bowlingStyle', 'role', 'isActive'] as const
 
 export async function GET() {
   try {
@@ -14,6 +17,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const denied = await assertCanWrite(request)
+    if (denied) return denied
+
     await connectDB()
     const body = await request.json()
     const { fullName, shortName, battingStyle, bowlingStyle, role, isActive } = body
@@ -29,24 +35,28 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const denied = await assertCanWrite(request)
+    if (denied) return denied
+
     await connectDB()
     const body = await request.json()
 
-    console.log('CREATE PLAYER BODY:',body) 
-
-    const { id, ...updates } = body
+    const { id } = body
 
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
-    const player = await Player.findByIdAndUpdate(id, updates, { new: true })
+    const updates: Record<string, unknown> = {}
+    for (const key of PLAYER_ALLOWED_FIELDS) {
+      if (key in body) updates[key] = body[key]
+    }
+
+    const player = await Player.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
 
     if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 })
 
     return NextResponse.json(player)
 
   } catch (err: any) {
-    console.error("PLAYER CREATE ERROR",err)
-    
     return NextResponse.json({ error: err.message || 'Failed to update player' }, { status: 500 })
   }
 }

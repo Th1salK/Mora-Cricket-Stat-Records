@@ -1,4 +1,6 @@
+import { redirect } from 'next/navigation'
 import StatsEntryClient from '../../../components/StatsEntryClient'
+import { isAdmin } from '../../../lib/auth'
 
 type Player = {
   _id: string
@@ -17,6 +19,10 @@ type Match = {
 }
 
 export default async function Page() {
+  if (!(await isAdmin())) {
+    redirect('/login')
+  }
+
   const playersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/players`, { cache: 'no-store' })
   const matchesRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/matches`, { cache: 'no-store' })
 
