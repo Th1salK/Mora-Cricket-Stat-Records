@@ -15,9 +15,9 @@ export const matchSchema = z.object({
     message: "Invalid date format",
   }),
   opponent: z.string().trim().min(1, "Opponent is required").max(100),
-  venue: z.enum(VENUES, { errorMap: () => ({ message: "Venue must be Home or Away" }) }),
+  venue: z.enum(VENUES, { message: "Venue must be Home or Away" }),
   overs: z.number().positive("Overs must be a positive number"),
-  matchType: z.enum(MATCH_TYPES, { errorMap: () => ({ message: "Invalid match type" }) }),
+  matchType: z.enum(MATCH_TYPES, { message: "Invalid match type" }),
 })
 
 export const matchUpdateSchema = matchSchema
@@ -27,7 +27,7 @@ export const playerSchema = z.object({
   shortName: z.string().trim().min(1, "Short name is required").max(20),
   battingStyle: z.enum(BATTING_STYLES).optional(),
   bowlingStyle: z.string().trim().max(50).nullable().optional(),
-  role: z.enum(ROLES, { errorMap: () => ({ message: "Invalid role" }) }),
+  role: z.enum(ROLES, { message: "Invalid role" }),
   isActive: z.boolean().optional().default(true),
 })
 
