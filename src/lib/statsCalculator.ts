@@ -202,3 +202,24 @@ export async function getPlayerBowlingStats(matchType: MatchType = 'All'): Promi
 
   return rows.sort((a, b) => b.wickets - a.wickets)
 }
+
+// ─── Breakdown by match type ─────────────────────────────────────────────────
+
+export interface BreakdownEntry {
+  batting: BattingStats
+  bowling: BowlingStats
+  matchCount: number
+}
+
+export async function getBreakdownStats(): Promise<Record<string, BreakdownEntry>> {
+  const result: Record<string, BreakdownEntry> = {}
+
+  for (const matchType of MATCH_TYPES) {
+    const matchCount = await Match.countDocuments({ matchType })
+    const batting = await getBattingStats(matchType)
+    const bowling = await getBowlingStats(matchType)
+    result[matchType] = { batting, bowling, matchCount }
+  }
+
+  return result
+}
