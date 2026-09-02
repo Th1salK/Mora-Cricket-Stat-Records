@@ -1,12 +1,6 @@
 import mongoose from "mongoose";
 import { promises as dnsPromises } from "dns";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI not defined");
-}
-
 declare global{
     var mongooseConn:
     |{
@@ -85,10 +79,15 @@ export async function connectWithFallback(uri: string): Promise<typeof mongoose>
 }
 
 export async function connectDB() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI not defined");
+  }
+
   if (cached!.conn) return cached!.conn;
 
   if (!cached!.promise) {
-    cached!.promise = connectWithFallback(MONGODB_URI as string);
+    cached!.promise = connectWithFallback(MONGODB_URI);
   }
 
   cached!.conn = await cached!.promise;
