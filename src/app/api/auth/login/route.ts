@@ -1,36 +1,39 @@
-import { NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
-import { connectDB } from '../../../../lib/mongodb'
-import User from '../../../../models/User'
-import Session from '../../../../models/Session'
+import { NextResponse } from "next/server"
+import bcrypt from "bcryptjs"
+import { connectDB } from "../../../../lib/mongodb"
+import User from "../../../../models/User"
+import Session from "../../../../models/Session"
 import {
   createSessionToken,
   hashToken,
   buildSessionCookieOptions,
   SESSION_MAX_AGE_MS,
-} from '../../../../lib/auth'
+} from "../../../../lib/auth"
 import {
   checkLoginRateLimit,
   recordLoginFailure,
   clearLoginRateLimit,
   loginLockoutSeconds,
-} from '../../../../lib/rateLimit'
+} from "../../../../lib/rateLimit"
+import { loginSchema } from "../../../../lib/validations"
 
 export async function POST(request: Request) {
   try {
     if (!checkLoginRateLimit(request)) {
       return NextResponse.json(
-        { error: `Too many login attempts. Try again in ${loginLockoutSeconds(request)}s.` },
+        { error: "Too many login attempts. Try again in " + loginLockoutSeconds(request) + "s." },
         { status: 429 }
       )
     }
 
     const body = await request.json()
-    const { username, password } = body
+    const parsed = loginSchema.safeParse(body)
 
-    if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password) {
-      return NextResponse.json({ error: 'Username and password are required' }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }, { status: 400 })
     }
+
+    const { username, password } = parsed.data
 
     await connectDB()
     const user = await User.findOne({ username: username.trim().toLowerCase() })
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
 
     if (!user || !passwordOk) {
       recordLoginFailure(request)
-      return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 })
+      return NextResponse.json({ error: "Invalid username or password" }, { status: 401 })
     }
 
     clearLoginRateLimit(request)
@@ -52,9 +55,9 @@ export async function POST(request: Request) {
     })
 
     const response = NextResponse.json({ ok: true, username: user.username })
-    response.cookies.set('admin_session', token, buildSessionCookieOptions())
+    response.cookies.set("admin_session", token, buildSessionCookieOptions())
     return response
   } catch {
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 })
+    return NextResponse.json({ error: "Login failed" }, { status: 500 })
   }
 }
