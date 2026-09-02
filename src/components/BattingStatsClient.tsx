@@ -71,7 +71,7 @@ export default function BattingStatsClient({
   ]
 
   function arrow(key: SortKey) {
-    if (sortKey !== key) return <span className="text-slate-600 ml-1">\u2195</span>
+    if (sortKey !== key) return <span className="text-slate-600 ml-1">{"\u2195"}</span>
     return <span className="text-yellow-400 ml-1">{sortDir === "desc" ? "\u2193" : "\u2191"}</span>
   }
 
