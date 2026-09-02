@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { connectDB } from '../../../../lib/mongodb'
-import { getPlayerBattingStats, getPlayerBowlingStats, MATCH_TYPES } from '../../../../lib/statsCalculator'
-import Match from '../../../../models/Match'
+import { NextResponse } from "next/server"
+import { connectDB } from "../../../../lib/mongodb"
+import { getPlayerBattingStats, getPlayerBowlingStats, MATCH_TYPES } from "../../../../lib/statsCalculator"
+import Match from "../../../../models/Match"
 
 export async function GET() {
   try {
@@ -17,7 +17,7 @@ export async function GET() {
     }
 
     return NextResponse.json(result)
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Failed to compute breakdown stats' }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: "Failed to compute breakdown stats" }, { status: 500 })
   }
 }

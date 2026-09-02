@@ -1,11 +1,18 @@
-import { NextResponse } from 'next/server'
-import { connectDB } from '../../../../../lib/mongodb'
-import { MatchType, MATCH_TYPES } from '../../../../../lib/statsCalculator'
-import BattingPerformance from '../../../../../models/BattingPerformance'
-import BowlingPerformance from '../../../../../models/BowlingPerformance'
-import Match from '../../../../../models/Match'
+import { NextResponse } from "next/server"
+import { connectDB } from "../../../../../lib/mongodb"
+import { MatchType, MATCH_TYPES } from "../../../../../lib/statsCalculator"
+import BattingPerformance from "../../../../../models/BattingPerformance"
+import BowlingPerformance from "../../../../../models/BowlingPerformance"
+import Match from "../../../../../models/Match"
 
 type Params = { params: Promise<{ id: string }> }
+
+interface PopulatedMatch {
+  _id: string
+  date: string
+  opponent: string
+  matchType: string
+}
 
 export async function GET(req: Request, { params }: Params) {
   try {
@@ -13,15 +20,14 @@ export async function GET(req: Request, { params }: Params) {
     await connectDB()
 
     const { searchParams } = new URL(req.url)
-    const matchTypeParam = searchParams.get('matchType') || 'All'
+    const matchTypeParam = searchParams.get("matchType") || "All"
 
-    const validTypes: string[] = [...MATCH_TYPES, 'All']
+    const validTypes: string[] = [...MATCH_TYPES, "All"]
     const matchType: MatchType = validTypes.includes(matchTypeParam)
       ? (matchTypeParam as MatchType)
-      : 'All'
+      : "All"
 
-    // Resolve match IDs filtered by matchType
-    const matchFilter = matchType === 'All' ? {} : { matchType }
+    const matchFilter = matchType === "All" ? {} : { matchType }
     const matches = await Match.find(matchFilter).lean()
     const matchIds = matches.map((m) => m._id)
 
@@ -30,7 +36,7 @@ export async function GET(req: Request, { params }: Params) {
       playerId: id,
       matchId: { $in: matchIds },
     })
-      .populate('matchId')
+      .populate("matchId")
       .lean()
 
     const bTotalInnings = battingPerfs.length
@@ -47,32 +53,36 @@ export async function GET(req: Request, { params }: Params) {
     const bFifties = battingPerfs.filter((p) => (p.runs || 0) >= 50 && (p.runs || 0) < 100).length
     const bHundreds = battingPerfs.filter((p) => (p.runs || 0) >= 100).length
 
-    // Recent batting: sort newest first
     const recentBatting = [...battingPerfs]
       .sort((a, b) => {
-        const dateA = (a.matchId as any)?.date ? new Date((a.matchId as any).date).getTime() : 0
-        const dateB = (b.matchId as any)?.date ? new Date((b.matchId as any).date).getTime() : 0
+        const matchA = a.matchId as unknown as PopulatedMatch
+        const matchB = b.matchId as unknown as PopulatedMatch
+        const dateA = matchA?.date ? new Date(matchA.date).getTime() : 0
+        const dateB = matchB?.date ? new Date(matchB.date).getTime() : 0
         return dateB - dateA
       })
       .slice(0, 10)
-      .map((p) => ({
-        matchId: (p.matchId as any)?._id,
-        opponent: (p.matchId as any)?.opponent ?? '—',
-        date: (p.matchId as any)?.date ?? null,
-        matchType: (p.matchId as any)?.matchType ?? '—',
-        runs: p.runs,
-        balls: p.balls,
-        fours: p.fours,
-        sixes: p.sixes,
-        out: p.out,
-      }))
+      .map((p) => {
+        const match = p.matchId as unknown as PopulatedMatch
+        return {
+          matchId: match?._id,
+          opponent: match?.opponent ?? "\u2014",
+          date: match?.date ?? null,
+          matchType: match?.matchType ?? "\u2014",
+          runs: p.runs,
+          balls: p.balls,
+          fours: p.fours,
+          sixes: p.sixes,
+          out: p.out,
+        }
+      })
 
     // ---- Bowling ----
     const bowlingPerfs = await BowlingPerformance.find({
       playerId: id,
       matchId: { $in: matchIds },
     })
-      .populate('matchId')
+      .populate("matchId")
       .lean()
 
     const wTotalBalls = bowlingPerfs.reduce((s, p) => s + (p.balls || 0), 0)
@@ -87,7 +97,7 @@ export async function GET(req: Request, { params }: Params) {
     const wStrikeRate = wTotalWickets === 0 ? 0 : Number((wTotalBalls / wTotalWickets).toFixed(2))
     const wFiveWickets = bowlingPerfs.filter((p) => (p.wickets || 0) >= 5).length
 
-    let wBestFigures = '-'
+    let wBestFigures = "-"
     if (bowlingPerfs.length > 0) {
       const best = [...bowlingPerfs].sort((a, b) => {
         if ((b.wickets || 0) !== (a.wickets || 0)) return (b.wickets || 0) - (a.wickets || 0)
@@ -96,25 +106,29 @@ export async function GET(req: Request, { params }: Params) {
       wBestFigures = `${best.wickets || 0}/${best.runs || 0}`
     }
 
-    // Recent bowling: sort newest first
     const recentBowling = [...bowlingPerfs]
       .sort((a, b) => {
-        const dateA = (a.matchId as any)?.date ? new Date((a.matchId as any).date).getTime() : 0
-        const dateB = (b.matchId as any)?.date ? new Date((b.matchId as any).date).getTime() : 0
+        const matchA = a.matchId as unknown as PopulatedMatch
+        const matchB = b.matchId as unknown as PopulatedMatch
+        const dateA = matchA?.date ? new Date(matchA.date).getTime() : 0
+        const dateB = matchB?.date ? new Date(matchB.date).getTime() : 0
         return dateB - dateA
       })
       .slice(0, 10)
-      .map((p) => ({
-        matchId: (p.matchId as any)?._id,
-        opponent: (p.matchId as any)?.opponent ?? '—',
-        date: (p.matchId as any)?.date ?? null,
-        matchType: (p.matchId as any)?.matchType ?? '—',
-        balls: p.balls,
-        runs: p.runs,
-        wickets: p.wickets,
-        wides: p.wides,
-        noBalls: p.noBalls,
-      }))
+      .map((p) => {
+        const match = p.matchId as unknown as PopulatedMatch
+        return {
+          matchId: match?._id,
+          opponent: match?.opponent ?? "\u2014",
+          date: match?.date ?? null,
+          matchType: match?.matchType ?? "\u2014",
+          balls: p.balls,
+          runs: p.runs,
+          wickets: p.wickets,
+          wides: p.wides,
+          noBalls: p.noBalls,
+        }
+      })
 
     return NextResponse.json({
       batting: {
@@ -147,7 +161,7 @@ export async function GET(req: Request, { params }: Params) {
       recentBatting,
       recentBowling,
     })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Failed to fetch player stats' }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch player stats" }, { status: 500 })
   }
 }
