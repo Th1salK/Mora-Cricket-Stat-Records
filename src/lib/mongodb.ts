@@ -71,8 +71,9 @@ export async function connectWithFallback(uri: string): Promise<typeof mongoose>
 
     const directHosts = hosts.map((h) => `${h.name}:${h.port || 27017}`).join(",");
     const extraParams = "ssl=true&authSource=admin";
-    const separator = rest.includes("?") ? "&" : "?";
-    const directUri = `mongodb://${auth}@${directHosts}${rest}${separator}${extraParams}`;
+    const path = rest.startsWith("/")? rest:`/${rest}`;
+    const separator = path.includes("?") ? "&" : "?";
+    const directUri = `mongodb://${auth}@${directHosts}${path}${separator}${extraParams}`;
 
     return mongoose.connect(directUri);
   }
@@ -90,6 +91,11 @@ export async function connectDB() {
     cached!.promise = connectWithFallback(MONGODB_URI);
   }
 
-  cached!.conn = await cached!.promise;
+  try{
+    cached!.conn = await cached!.promise
+  }catch(err){
+    cached!.promise=null;
+    throw err;
+  }
   return cached!.conn;
 }
