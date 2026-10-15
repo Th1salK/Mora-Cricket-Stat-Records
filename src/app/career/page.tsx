@@ -9,8 +9,6 @@ import {
 } from "../../lib/statsCalculator"
 import { connectDB } from "../../lib/mongodb"
 
-type Breakdown = Record<string, BreakdownEntry>
-
 export default async function CareerPage() {
   await connectDB()
 

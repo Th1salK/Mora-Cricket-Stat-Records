@@ -24,7 +24,7 @@ function sweep(store: Map<string, Attempt>) {
   }
 }
 
-export function checkRateLimit(request: Request, key: string, maxAttempts: number, windowMs: number): boolean {
+export function checkRateLimit(request: Request, key: string, maxAttempts: number): boolean {
   const store = getStore(key)
   const ip = getClientIp(request)
   const now = Date.now()
@@ -64,7 +64,7 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000
 const LOGIN_MAX_ATTEMPTS = 5
 
 export function checkLoginRateLimit(request: Request): boolean {
-  return checkRateLimit(request, "login", LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS)
+  return checkRateLimit(request, "login", LOGIN_MAX_ATTEMPTS)
 }
 
 export function recordLoginFailure(request: Request): void {
@@ -83,7 +83,7 @@ const API_WINDOW_MS = 15 * 60 * 1000
 const API_MAX_ATTEMPTS = 30
 
 export function checkApiRateLimit(request: Request): boolean {
-  return checkRateLimit(request, "api-mutation", API_MAX_ATTEMPTS, API_WINDOW_MS)
+  return checkRateLimit(request, "api-mutation", API_MAX_ATTEMPTS)
 }
 
 export function recordApiAttempt(request: Request): void {
