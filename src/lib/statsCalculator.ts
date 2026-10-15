@@ -2,6 +2,7 @@ import BattingPerformance from '../models/BattingPerformance'
 import BowlingPerformance from '../models/BowlingPerformance'
 import Match from '../models/Match'
 import { MATCH_TYPES, type MatchTypeFilter } from '@/lib/constants'
+import Player from "@/models/Player"
 
 export { MATCH_TYPES }
 export type MatchType = MatchTypeFilter
@@ -134,7 +135,7 @@ export async function getPlayerBattingStats(matchType: MatchType = 'All'): Promi
   const matches = await Match.find(matchFilter).lean()
   const matchIds = matches.map((m) => m._id)
 
-  const performances = await BattingPerformance.find({ matchId: { $in: matchIds } }).populate('playerId').lean()
+  const performances = await BattingPerformance.find({ matchId: { $in: matchIds } }).populate({path:"playerId",model:Player}).lean()
 
   const grouped: Record<string, { name: string; perfs: typeof performances }> = {}
   for (const p of performances) {
