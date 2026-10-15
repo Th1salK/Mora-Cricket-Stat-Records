@@ -5,6 +5,8 @@ import Match from '../models/Match'
 export const MATCH_TYPES = ['Home and Home', 'Practice', 'Div 3', 'Inter Uni', 'SLUG'] as const
 export type MatchType = typeof MATCH_TYPES[number] | 'All'
 
+type PopulatedPlayer = { _id: { toString(): string }; fullName: string } | null
+
 // ─── Team-wide interfaces ─────────────────────────────────────────────────────
 
 export interface BattingStats {
@@ -135,7 +137,7 @@ export async function getPlayerBattingStats(matchType: MatchType = 'All'): Promi
 
   const grouped: Record<string, { name: string; perfs: typeof performances }> = {}
   for (const p of performances) {
-    const player = p.playerId as any
+    const player = p.playerId as unknown as PopulatedPlayer
     if (!player || !player._id) continue
     const pid = player._id.toString()
     if (!grouped[pid]) grouped[pid] = { name: player.fullName, perfs: [] }
@@ -173,7 +175,7 @@ export async function getPlayerBowlingStats(matchType: MatchType = 'All'): Promi
 
   const grouped: Record<string, { name: string; perfs: typeof performances }> = {}
   for (const p of performances) {
-    const player = p.playerId as any
+    const player = p.playerId as unknown as PopulatedPlayer
     if (!player || !player._id) continue
     const pid = player._id.toString()
     if (!grouped[pid]) grouped[pid] = { name: player.fullName, perfs: [] }

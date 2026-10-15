@@ -21,6 +21,11 @@ export default function Sidebar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname() || '/'
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const [lastPath, setLastPath] = useState(pathname)
+  if (pathname !== lastPath) {
+    setLastPath(pathname)
+    setIsOpen(false)
+  }
   const links = isAdmin ? [...publicLinks, ...adminLinks] : publicLinks
 
   async function handleLogout() {
@@ -28,11 +33,6 @@ export default function Sidebar({ isAdmin }: { isAdmin: boolean }) {
     router.refresh()
     router.push('/')
   }
-
-  // Close drawer on route change
-  useEffect(() => {
-    setIsOpen(false)
-  }, [pathname])
 
   // Prevent body scroll when drawer is open
   useEffect(() => {

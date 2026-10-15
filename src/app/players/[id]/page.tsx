@@ -118,7 +118,6 @@ export default function PlayerPage() {
   // Fetch stats whenever matchType changes
   useEffect(() => {
     if (!id) return
-    setLoadingStats(true)
     const qs = matchType === 'All' ? '' : `?matchType=${encodeURIComponent(matchType)}`
     fetch(`/api/players/${id}/stats${qs}`)
       .then((r) => r.json())
@@ -195,7 +194,7 @@ export default function PlayerPage() {
           </div>
         </div>
         <div className="mt-4 sm:mt-3">
-          <MatchTypeDropdown value={matchType} onChange={(v) => setMatchType(v as MatchType)} />
+          <MatchTypeDropdown value={matchType} onChange={(v) => { setLoadingStats(true); setMatchType(v as MatchType) }} />
         </div>
       </div>
 

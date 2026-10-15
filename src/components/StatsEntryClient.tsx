@@ -202,21 +202,12 @@ export default function StatsEntryClient({
   }
 
   // ---- Stats entry ----
-  function onEntryChange(index: number, field: keyof BattingEntry, value: string | boolean) {
-    setEntries((prev) => {
-      const copy = [...prev]
-      // @ts-ignore
-      copy[index][field] = value
-      return copy
-    })
+  function onEntryChange<K extends keyof BattingEntry>(index: number, field: K, value: BattingEntry[K]) {
+    setEntries((prev) => prev.map((e, i) => (i === index ? { ...e, [field]: value } : e)))
   }
 
-  function onBowlingChange(index: number, field: keyof BowlingEntry, value: string) {
-    setBowlingEntries((prev) => {
-      const copy = [...prev]
-      copy[index][field] = value
-      return copy
-    })
+  function onBowlingChange<K extends keyof BowlingEntry>(index: number, field: K, value: BowlingEntry[K]) {
+    setBowlingEntries((prev) => prev.map((e, i) => (i === index ? { ...e, [field]: value } : e)))
   }
 
   async function submitEntry(index: number) {
