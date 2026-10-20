@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server"
+import mongoose from "mongoose"
 import { connectDB } from "../../../../lib/mongodb"
 import { assertCanWrite } from "../../../../lib/auth"
 import { checkApiRateLimit, apiLockoutSeconds } from "../../../../lib/rateLimit"
 import { matchSchema } from "../../../../lib/validations"
 import Match from "../../../../models/Match"
+import BattingPerformance from "../../../../models/BattingPerformance"
+import BowlingPerformance from "../../../../models/BowlingPerformance"
+
+class MatchNotFoundError extends Error {
+  constructor() {
+    super("Match not found")
+    this.name = "MatchNotFoundError"
+  }
+}
 
 export async function GET(
   request: Request,
@@ -74,10 +84,46 @@ export async function DELETE(
 
     await connectDB()
     const { id } = await params
-    const deleted = await Match.findByIdAndDelete(id)
-    if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 })
-    return NextResponse.json({ success: true })
-  } catch {
+
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid match id" }, { status: 400 })
+    }
+
+    const dbSession = await mongoose.startSession()
+    let deletedCounts = { batting: 0, bowling: 0 }
+
+    try {
+      await dbSession.withTransaction(async () => {
+        const exists = await Match.exists({ _id: id }).session(dbSession)
+        if (!exists) throw new MatchNotFoundError()
+
+        const batting = await BattingPerformance.deleteMany(
+          { matchId: id },
+          { session: dbSession }
+        )
+        const bowling = await BowlingPerformance.deleteMany(
+          { matchId: id },
+          { session: dbSession }
+        )
+        await Match.findByIdAndDelete(id, { session: dbSession })
+
+        deletedCounts = {
+          batting: batting.deletedCount ?? 0,
+          bowling: bowling.deletedCount ?? 0,
+        }
+      })
+    } catch (error) {
+      if (error instanceof MatchNotFoundError) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 })
+      }
+      throw error
+    } finally {
+      await dbSession.endSession()
+    }
+
+    return NextResponse.json({ success: true, deleted: deletedCounts })
+  } catch (error) {
+    console.error("Failed to delete match:", error)
     return NextResponse.json({ error: "Failed to delete match" }, { status: 500 })
   }
 }
