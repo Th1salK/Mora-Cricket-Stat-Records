@@ -25,9 +25,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!checkApiRateLimit(request)) {
+    if (!(await checkApiRateLimit(request))) {
       return NextResponse.json(
-        { error: "Too many requests. Try again in " + apiLockoutSeconds(request) + "s." },
+        { error: "Too many requests", retryAfter: await apiLockoutSeconds(request) },
         { status: 429 }
       )
     }
@@ -62,9 +62,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!checkApiRateLimit(request)) {
+    if (!(await checkApiRateLimit(request))) {
       return NextResponse.json(
-        { error: "Too many requests. Try again in " + apiLockoutSeconds(request) + "s." },
+        { error: "Too many requests", retryAfter: await apiLockoutSeconds(request) },
         { status: 429 }
       )
     }

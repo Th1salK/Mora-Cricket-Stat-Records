@@ -21,9 +21,9 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function PUT(req: Request, { params }: Params) {
   try {
-    if (!checkApiRateLimit(req)) {
+    if (!(await checkApiRateLimit(req))) {
       return NextResponse.json(
-        { error: "Too many requests. Try again in " + apiLockoutSeconds(req) + "s." },
+        { error: "Too many requests", retryAfter: await apiLockoutSeconds(req) },
         { status: 429 }
       )
     }

@@ -19,9 +19,9 @@ import { loginSchema } from "../../../../lib/validations"
 
 export async function POST(request: Request) {
   try {
-    if (!checkLoginRateLimit(request)) {
+    if (!(await checkLoginRateLimit(request))) {
       return NextResponse.json(
-        { error: "Too many login attempts. Try again in " + loginLockoutSeconds(request) + "s." },
+        { error: "Too many login attempts. Try again in " + (await loginLockoutSeconds(request)) + "s." },
         { status: 429 }
       )
     }
@@ -41,11 +41,11 @@ export async function POST(request: Request) {
     const passwordOk = user ? await bcrypt.compare(password, user.passwordHash) : false
 
     if (!user || !passwordOk) {
-      recordLoginFailure(request)
+      await recordLoginFailure(request)
       return NextResponse.json({ error: "Invalid username or password" }, { status: 401 })
     }
 
-    clearLoginRateLimit(request)
+    await clearLoginRateLimit(request)
 
     const token = createSessionToken()
     await Session.create({
