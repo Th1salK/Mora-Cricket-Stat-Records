@@ -7,9 +7,9 @@ import BattingPerformance from "../../../models/BattingPerformance"
 
 export async function POST(request: Request) {
   try {
-    if (!checkApiRateLimit(request)) {
+    if (!(await checkApiRateLimit(request))) {
       return NextResponse.json(
-        { error: "Too many requests. Try again in " + apiLockoutSeconds(request) + "s." },
+        { error: "Too many requests", retryAfter: await apiLockoutSeconds(request) },
         { status: 429 }
       )
     }
