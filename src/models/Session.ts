@@ -12,16 +12,10 @@ const SessionSchema = new mongoose.Schema<ISession>(
   {
     tokenHash: { type: String, required: true, unique: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    expiresAt: { type: Date, required: true },
+    expiresAt: { type: Date, required: true, index: true },
   },
   { timestamps: true }
 )
-
-// NOTE: MongoDB cannot convert an existing non-TTL index into a TTL index.
-// Before deploying, drop the old `expiresAt_1` index on the sessions collection
-// in the Atlas UI (or run `db.sessions.dropIndex("expiresAt_1")`). Mongoose only
-// creates the TTL index below when an index with that name does not already exist.
-SessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 
 const Session: Model<ISession> =
   (mongoose.models.Session as Model<ISession>) ||
