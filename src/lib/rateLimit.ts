@@ -1,6 +1,7 @@
-type Attempt = { count: number; resetAt: number }
+import RateLimit from "@/models/RateLimit"
+import { connectDB } from "@/lib/mongodb"
 
-const stores = new Map<string, Map<string, Attempt>>()
+type Entry = { count: number; expiresAt: Date }
 
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")
@@ -8,88 +9,70 @@ function getClientIp(request: Request): string {
   return request.headers.get("x-real-ip") ?? "unknown"
 }
 
-function getStore(key: string): Map<string, Attempt> {
-  let store = stores.get(key)
-  if (!store) {
-    store = new Map()
-    stores.set(key, store)
-  }
-  return store
+function docKey(request: Request, bucket: string) {
+  return `${bucket}:${getClientIp(request)}` // one document per bucket + IP
 }
 
-function sweep(store: Map<string, Attempt>) {
-  const now = Date.now()
-  for (const [key, a] of store) {
-    if (a.resetAt <= now) store.delete(key)
-  }
-}
-
-export function checkRateLimit(request: Request, key: string, maxAttempts: number): boolean {
-  const store = getStore(key)
-  const ip = getClientIp(request)
-  const now = Date.now()
-  if (store.size > 1000) sweep(store)
-
-  const entry = store.get(ip)
-  if (!entry || entry.resetAt <= now) return true
+// Is this IP still under the limit? (does not count)
+export async function checkRateLimit(request: Request, bucket: string, maxAttempts: number): Promise<boolean> {
+  await connectDB()
+  const entry = await RateLimit.findOne({
+    key: docKey(request, bucket),
+    expiresAt: { $gt: new Date() },          // ignore windows that have ended
+  }).lean<Entry>()
+  if (!entry) return true
   return entry.count < maxAttempts
 }
 
-export function recordAttempt(request: Request, key: string, windowMs: number): void {
-  const store = getStore(key)
-  const ip = getClientIp(request)
-  const now = Date.now()
-  const entry = store.get(ip)
+// Add 1 and return the new count.
+export async function recordAttempt(request: Request, bucket: string, windowMs: number): Promise<number> {
+  await connectDB()
+  const key = docKey(request, bucket)
+  const now = new Date()
 
-  if (!entry || entry.resetAt <= now) {
-    store.set(ip, { count: 1, resetAt: now + windowMs })
-  } else {
-    entry.count += 1
-  }
+  const updated = await RateLimit.findOneAndUpdate(
+    { key, expiresAt: { $gt: now } },        // a window that's still running
+    { $inc: { count: 1 } },
+    { new: true }
+  ).lean<Entry>()
+  if (updated) return updated.count
+
+  await RateLimit.updateOne(                 // no running window: start one at 1
+    { key },
+    { $set: { count: 1, expiresAt: new Date(now.getTime() + windowMs) } },
+    { upsert: true }
+  )
+  return 1
 }
 
-export function clearRateLimit(request: Request, key: string): void {
-  const store = getStore(key)
-  store.delete(getClientIp(request))
+export async function clearRateLimit(request: Request, bucket: string): Promise<void> {
+  await connectDB()
+  await RateLimit.deleteOne({ key: docKey(request, bucket) })
 }
 
-export function lockoutSeconds(request: Request, key: string): number {
-  const store = getStore(key)
-  const entry = store.get(getClientIp(request))
+export async function lockoutSeconds(request: Request, bucket: string): Promise<number> {
+  await connectDB()
+  const entry = await RateLimit.findOne({ key: docKey(request, bucket) }).lean<Entry>()
   if (!entry) return 0
-  return Math.max(0, Math.ceil((entry.resetAt - Date.now()) / 1000))
+  return Math.max(0, Math.ceil((entry.expiresAt.getTime() - Date.now()) / 1000))
 }
 
+// ---- Login: count failures only, clear on success (same behaviour as before) ----
 const LOGIN_WINDOW_MS = 15 * 60 * 1000
 const LOGIN_MAX_ATTEMPTS = 5
 
-export function checkLoginRateLimit(request: Request): boolean {
-  return checkRateLimit(request, "login", LOGIN_MAX_ATTEMPTS)
-}
+export const checkLoginRateLimit = (r: Request) => checkRateLimit(r, "login", LOGIN_MAX_ATTEMPTS)
+export const recordLoginFailure  = (r: Request) => recordAttempt(r, "login", LOGIN_WINDOW_MS)
+export const clearLoginRateLimit = (r: Request) => clearRateLimit(r, "login")
+export const loginLockoutSeconds = (r: Request) => lockoutSeconds(r, "login")
 
-export function recordLoginFailure(request: Request): void {
-  recordAttempt(request, "login", LOGIN_WINDOW_MS)
-}
-
-export function clearLoginRateLimit(request: Request): void {
-  clearRateLimit(request, "login")
-}
-
-export function loginLockoutSeconds(request: Request): number {
-  return lockoutSeconds(request, "login")
-}
-
+// ---- API writes: every call counts, so check + record happen together ----
 const API_WINDOW_MS = 15 * 60 * 1000
 const API_MAX_ATTEMPTS = 30
 
-export function checkApiRateLimit(request: Request): boolean {
-  return checkRateLimit(request, "api-mutation", API_MAX_ATTEMPTS)
+export async function checkApiRateLimit(request: Request): Promise<boolean> {
+  const count = await recordAttempt(request, "api-mutation", API_WINDOW_MS)
+  return count <= API_MAX_ATTEMPTS           // <= because this request is already counted
 }
 
-export function recordApiAttempt(request: Request): void {
-  recordAttempt(request, "api-mutation", API_WINDOW_MS)
-}
-
-export function apiLockoutSeconds(request: Request): number {
-  return lockoutSeconds(request, "api-mutation")
-}
+export const apiLockoutSeconds = (r: Request) => lockoutSeconds(r, "api-mutation")
