@@ -1,15 +1,18 @@
-export type DismissalType =
-  | "bowled"
-  | "caught"
-  | "lbw"
-  | "stumped"
-  | "run out"
-  | "hit wicket"
-  | "not out"
-  | "retired hurt"
-  | "retired out"
-  | "did not bat"
-  | "other"
+export const DISMISSAL_TYPES = [
+  "bowled",
+  "caught",
+  "lbw",
+  "stumped",
+  "run out",
+  "hit wicket",
+  "not out",
+  "retired hurt",
+  "retired out",
+  "did not bat",
+  "other",
+] as const
+
+export type DismissalType = (typeof DISMISSAL_TYPES)[number]
 
 export type Dismissal = {
   type: DismissalType

@@ -1,4 +1,5 @@
 import mongoose, { Document, Model } from 'mongoose'
+import { DISMISSAL_TYPES, type DismissalType } from '@/lib/import/parse'
 
 export interface IBattingPerformance extends Document {
   matchId: mongoose.Types.ObjectId
@@ -7,10 +8,25 @@ export interface IBattingPerformance extends Document {
   balls: number
   fours: number
   sixes: number
+  position?: number
+  dismissal?: {
+    type: DismissalType
+    fielder: string | null
+    bowler: string | null
+  }
   out: boolean
   createdAt: Date
   updatedAt: Date
 }
+
+const DismissalSchema = new mongoose.Schema(
+  {
+    type: { type: String, enum: [...DISMISSAL_TYPES] },
+    fielder: { type: String, default: null },
+    bowler: { type: String, default: null },
+  },
+  { _id: false }
+)
 
 const BattingPerformanceSchema = new mongoose.Schema<IBattingPerformance>(
   {
@@ -20,6 +36,8 @@ const BattingPerformanceSchema = new mongoose.Schema<IBattingPerformance>(
     balls: { type: Number, default: 0 },
     fours: { type: Number, default: 0 },
     sixes: { type: Number, default: 0 },
+    position: { type: Number, min: 1, max: 11 },
+    dismissal: { type: DismissalSchema },
     out: { type: Boolean, default: false },
   },
   { timestamps: true }

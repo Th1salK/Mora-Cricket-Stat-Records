@@ -3,6 +3,7 @@ import mongoose, { Document, Model } from 'mongoose'
 export interface IPlayer extends Document {
   fullName: string
   shortName: string
+  aliases: string[]
   battingStyle?: 'Right Hand Bat' | 'Left Hand Bat'
   bowlingStyle?: string | null
   role: 'Batsman' | 'Bowler' | 'All-rounder' | 'Wicket-keeper'
@@ -15,6 +16,7 @@ const PlayerSchema = new mongoose.Schema<IPlayer>(
   {
     fullName: { type: String, required: true },
     shortName: { type: String, required: true },
+    aliases: { type: [String], default: [] },
     battingStyle: {
       type: String,
       enum: ['Right Hand Bat', 'Left Hand Bat'],
