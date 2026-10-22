@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
@@ -9,12 +10,19 @@ import {
   type MatchDetails,
 } from "@/lib/import/draft"
 import type { PlayerLite } from "@/lib/import/matchPlayers"
+import type { PublishProblem } from "@/lib/import/publish"
 import { resizeImage } from "@/lib/import/resizeImage"
-import { createManualDraftAction, extractAction, saveDraftAction } from "@/lib/actions/importActions"
+import {
+  createManualDraftAction,
+  extractAction,
+  publishAction,
+  saveDraftAction,
+  type PublishActionResult,
+} from "@/lib/actions/importActions"
 import DraftReview from "./DraftReview"
 
 const MAX_TOTAL_BYTES = 4.5 * 1024 * 1024
-const MAX_FILES = 4
+const MAX_FILES = 10
 
 const inputClass =
   "w-full rounded border border-blue-500/30 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-blue-400"
@@ -58,6 +66,10 @@ export default function ImportClient({ players }: { players: PlayerLite[] }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [publishProblems, setPublishProblems] = useState<PublishProblem[] | null>(null)
+  const [duplicate, setDuplicate] = useState<{ message: string } | null>(null)
+  const [publishedMatchId, setPublishedMatchId] = useState<string | null>(null)
 
   const screenshotsRef = useRef(screenshots)
   useEffect(() => {
@@ -195,6 +207,112 @@ export default function ImportClient({ players }: { players: PlayerLite[] }) {
     }
   }
 
+  function handlePublishFailure(result: Extract<PublishActionResult, { ok: false }>) {
+    if (result.code === "duplicate") {
+      setDuplicate({ message: result.error })
+      return
+    }
+
+    if (result.code === "problems") {
+      setPublishProblems(result.problems ?? [])
+    }
+
+    setError(result.error)
+  }
+
+  async function publish() {
+    const parsedDetails = validateDetails()
+    if (!parsedDetails || !draft || !draftId) return
+
+    setPublishing(true)
+    setError(null)
+    setPublishProblems(null)
+    setDuplicate(null)
+    try {
+      const saved = await saveDraftAction(draftId, parsedDetails, draft)
+      if (!saved.ok) {
+        setError(saved.error)
+        return
+      }
+
+      const result = await publishAction(draftId)
+      if (result.ok) {
+        setPublishedMatchId(result.matchId)
+        return
+      }
+
+      handlePublishFailure(result)
+    } catch {
+      setError("Could not publish the match. Try again.")
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  async function publishAnyway() {
+    if (!draftId) return
+
+    setPublishing(true)
+    setError(null)
+    setPublishProblems(null)
+    try {
+      const result = await publishAction(draftId, { force: true })
+      if (result.ok) {
+        setPublishedMatchId(result.matchId)
+        return
+      }
+
+      handlePublishFailure(result)
+    } catch {
+      setError("Could not publish the match. Try again.")
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  function resetImport() {
+    screenshots.forEach((screenshot) => URL.revokeObjectURL(screenshot.url))
+    setScreenshots([])
+    setStep("upload")
+    setDetails(emptyDetails())
+    setDraftId(null)
+    setDraft(null)
+    setNotice(null)
+    setError(null)
+    setPublishProblems(null)
+    setDuplicate(null)
+    setPublishedMatchId(null)
+  }
+
+  if (publishedMatchId) {
+    return (
+      <div className="glass space-y-4 p-6">
+        <h1 className="text-2xl font-bold text-emerald-400">Match published</h1>
+        <p className="text-sm text-slate-400">
+          The match, performances and player aliases are now saved.
+        </p>
+        <div className="flex flex-wrap gap-4 text-sm">
+          <Link href="/matches" className="text-blue-400 hover:text-blue-300">
+            Matches
+          </Link>
+          <Link href="/stats/batting" className="text-blue-400 hover:text-blue-300">
+            Batting stats
+          </Link>
+          <Link href="/stats/bowling" className="text-blue-400 hover:text-blue-300">
+            Bowling stats
+          </Link>
+        </div>
+        <button
+          type="button"
+          onClick={resetImport}
+          className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black"
+        >
+          Import another match
+        </button>
+      </div>
+    )
+  }
+
   if (step === "review" && draft) {
     return (
       <DraftReview
@@ -206,15 +324,17 @@ export default function ImportClient({ players }: { players: PlayerLite[] }) {
         onSave={save}
         saveLabel="Save draft"
         saving={busy}
+        onPublish={publish}
+        publishing={publishing}
+        problems={publishProblems}
+        duplicate={
+          duplicate
+            ? { message: duplicate.message, onPublishAnyway: publishAnyway }
+            : null
+        }
         error={error}
         notice={notice}
-        onBack={() => {
-          setStep("upload")
-          setDraft(null)
-          setDraftId(null)
-          setNotice(null)
-          setError(null)
-        }}
+        onBack={resetImport}
       />
     )
   }

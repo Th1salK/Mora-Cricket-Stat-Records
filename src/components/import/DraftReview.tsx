@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 import { MATCH_TYPES } from "@/lib/constants"
+import { buildPublishPayload, type PublishProblem } from "@/lib/import/publish"
 import {
   canPublish,
   draftWarnings,
@@ -24,6 +26,10 @@ type DraftReviewProps = {
   onSave: () => void
   saveLabel: string
   saving: boolean
+  onPublish: () => Promise<void> | void
+  publishing: boolean
+  problems?: PublishProblem[] | null
+  duplicate?: { message: string; onPublishAnyway: () => void } | null
   error?: string | null
   notice?: string | null
   backHref?: string
@@ -95,14 +101,28 @@ export default function DraftReview({
   onSave,
   saveLabel,
   saving,
+  onPublish,
+  publishing,
+  problems,
+  duplicate,
   error,
   notice,
   backHref,
   onBack,
 }: DraftReviewProps) {
+  const [confirming, setConfirming] = useState(false)
   const warnings = draftWarnings(draft)
-  const blocking = warnings.filter((warning) => warning.blocking)
-  const ready = canPublish(draft)
+  const preview = buildPublishPayload(details, draft, players)
+  const previewBlocking = preview.problems.filter((problem) => problem.blocking)
+  const nonBlocking = preview.problems.filter((problem) => !problem.blocking)
+  const blockingMessages = [
+    ...warnings.filter((warning) => warning.blocking).map((warning) => warning.message),
+    ...previewBlocking.map((problem) => problem.message),
+  ]
+  const ready = canPublish(draft) && preview.payload !== null
+  const battingCount = preview.payload?.batting.length ?? 0
+  const bowlingCount = preview.payload?.bowling.length ?? 0
+  const busy = saving || publishing
 
   return (
     <div className="space-y-6">
@@ -389,11 +409,77 @@ export default function DraftReview({
         </p>
       ) : null}
 
+      {problems && problems.length > 0 ? (
+        <ul className="space-y-1 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+          {problems.map((problem, index) => (
+            <li key={`${problem.message}-${index}`}>{problem.message}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {duplicate ? (
+        <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+          <p>{duplicate.message}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/matches" className="text-blue-300 hover:text-blue-200">
+              View matches
+            </Link>
+            <button
+              type="button"
+              onClick={duplicate.onPublishAnyway}
+              disabled={busy}
+              className="rounded border border-amber-400/40 px-3 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-500/10 disabled:opacity-50"
+            >
+              Publish anyway
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {confirming && ready ? (
+        <div className="glass-blue space-y-3 p-4">
+          <p className="text-sm text-blue-100">
+            Mora vs {details.opponent}, {details.date}, {details.matchType}: {battingCount}{" "}
+            batting and {bowlingCount} bowling records will be saved
+          </p>
+
+          {nonBlocking.length > 0 ? (
+            <ul className="list-inside list-disc text-xs text-amber-200">
+              {nonBlocking.map((problem, index) => (
+                <li key={`${problem.message}-${index}`}>{problem.message}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={publishing}
+              className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-white/5 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await onPublish()
+                setConfirming(false)
+              }}
+              disabled={busy}
+              className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            >
+              {publishing ? "Publishing…" : "Confirm publish"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={onSave}
-          disabled={saving}
+          disabled={busy}
           className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
         >
           {saving ? "Saving…" : saveLabel}
@@ -401,19 +487,30 @@ export default function DraftReview({
 
         <button
           type="button"
-          disabled
-          title="Publishing arrives in the next step"
-          className="cursor-not-allowed rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-500"
+          onClick={() => setConfirming(true)}
+          disabled={!ready || busy}
+          title={ready ? undefined : "Fix the blocking warnings first"}
+          className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Publish (coming next)
+          Publish match
         </button>
 
         <span className={`text-xs ${ready ? "text-emerald-400" : "text-red-300"}`}>
           {ready
             ? "No blocking warnings."
-            : `${blocking.length} blocking warning${blocking.length === 1 ? "" : "s"}.`}
+            : `${blockingMessages.length} blocking warning${
+                blockingMessages.length === 1 ? "" : "s"
+              }.`}
         </span>
       </div>
+
+      {!ready && blockingMessages.length > 0 ? (
+        <ul className="list-inside list-disc space-y-1 text-xs text-red-300">
+          {Array.from(new Set(blockingMessages)).map((message) => (
+            <li key={message}>{message}</li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   )
 }
