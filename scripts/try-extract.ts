@@ -1,22 +1,17 @@
 import { readFileSync,readdirSync } from "node:fs"
 import path from  "node:path"
 import { GoogleGenAI } from "@google/genai"
-import { ms } from "zod/locales"
-import { Model } from "mongoose"
+import {z} from "zod"
+import { ExtractionSchema,extractionJsonSchema } from "@/lib/import/schema"
+import { checkExtraction } from "@/lib/import/checks"
 
 const PROMPT = `You read cricket scorecard screenshots from CricHeroes or SL Cricket Scorers.
-Return JSON only, in this shape:
-{ "innings": [{ "battingTeam": string,
-    "total": { "runs": number, "wickets": number, "overs": string },
-    "extras": { "byes": number|null, "legByes": number|null, "wides": number|null, "noBalls": number|null, "penalty": number|null },
-    "batting": [{ "name": string, "howOut": string, "runs": number|null, "balls": number|null, "fours": number|null, "sixes": number|null }],
-    "bowling": [{ "name": string, "overs": string, "maidens": number|null, "runs": number|null, "wickets": number|null, "wides": number|null, "noBalls": number|null }],
-    "didNotBat": string[] }],
-  "unreadable": string[] }
+Fill in the given JSON schema, one entry in "innings" per innings shown.
 Rules:
 - Extract only innings totals, extras, batting and bowling. Ignore match details, result, fall of wickets, summaries and ads.
 - Copy names exactly as shown, including (c), *, † and cut-off names.
 - Copy overs as text exactly as shown, e.g. "8.5".
+- Copy "how out" text exactly, e.g. "c X b Y", "not out".
 - If screenshots overlap, list each player once per innings.
 - Never calculate or guess. Use null for anything hidden or unclear and describe it in "unreadable".`
 
@@ -74,10 +69,40 @@ async function main(){
 
     const res = await generateWithRetry(ai, {
     contents: [{ role: "user", parts: [{ text: PROMPT }, ...images] }],
-    config: { responseMimeType: "application/json", temperature: 0 },
+    config: { 
+        responseMimeType: "application/json",responseJsonSchema:extractionJsonSchema, //gemini must answer in this shape everytime.
+        temperature: 0 },
   })
 
    console.log(`Answered in ${((Date.now() - started) / 1000).toFixed(1)}s`)
-  console.log(JSON.stringify(JSON.parse(res.text ?? "{}"), null, 2))
+    const raw = JSON.parse(res.text ?? "{}")
+  const parsed = ExtractionSchema.safeParse(raw)
+
+  if (!parsed.success) {
+    console.error("AI reply didn't match the schema:")
+    console.error(z.prettifyError(parsed.error))
+    console.log(JSON.stringify(raw, null, 2))
+    process.exit(1)
+  }
+
+  const data = parsed.data   // from here on, TypeScript knows the exact shape
+  console.log(JSON.stringify(data, null, 2))
+
+  const warnings = checkExtraction(data)
+  if (warnings.length === 0) {
+    console.log("✓ All checks passed")
+  } else {
+    console.log(`${warnings.length} warning(s):`)
+    for (const warning of warnings) {
+      console.log(`  [innings ${warning.innings}] ${warning.code}: ${warning.message}`)
+    }
+  }
+
+  if (data.unreadable.length > 0) {
+    console.log("Unreadable:")
+    for (const item of data.unreadable) {
+      console.log(`  - ${item}`)
+    }
+  }
 }
 main().catch((err) => { console.error(err); process.exit(1) })
