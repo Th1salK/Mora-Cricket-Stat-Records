@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import StatsEntryClient from '../../../components/StatsEntryClient'
 import { isAdmin } from '../../../lib/auth'
+import type { MatchTypeValue } from '../../../lib/constants'
 
 type Player = {
   _id: string
@@ -15,7 +16,7 @@ type Match = {
   opponent: string
   venue: 'Home' | 'Away'
   overs: number
-  matchType: 'Home and Home' | 'Practice' | 'Div 3' | 'Inter Uni' | 'SLUG'
+  matchType: MatchTypeValue
 }
 
 export default async function Page() {

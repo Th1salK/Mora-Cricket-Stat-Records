@@ -1,6 +1,6 @@
 'use client'
 
-const MATCH_TYPES = ['Home and Home', 'Practice', 'Div 3', 'Inter Uni', 'SLUG'] as const
+import { MATCH_TYPES } from '@/lib/constants'
 
 interface MatchTypeDropdownProps {
   value: string

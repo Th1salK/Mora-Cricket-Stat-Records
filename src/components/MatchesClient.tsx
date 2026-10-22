@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { getMatchTypeBadgeClass } from "../lib/matchTypeBadge"
+import { MATCH_TYPES, type MatchTypeValue } from "@/lib/constants"
 
 type Match = {
   _id?: string
@@ -10,7 +11,7 @@ type Match = {
   opponent: string
   venue: "Home" | "Away"
   overs: number
-  matchType: "Home and Home" | "Practice" | "Div 3" | "Inter Uni" | "SLUG"
+  matchType: MatchTypeValue
 }
 
 export default function MatchesClient({
@@ -201,11 +202,9 @@ export default function MatchesClient({
               onChange={onChange}
               className="glass-select w-full"
             >
-              <option value="Home and Home">Home and Home</option>
-              <option value="Practice">Practice</option>
-              <option value="Div 3">Div 3</option>
-              <option value="Inter Uni">Inter Uni</option>
-              <option value="SLUG">SLUG</option>
+              {MATCH_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
             </select>
           </div>
 

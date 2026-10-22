@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import MatchTypeDropdown from '@/components/MatchTypeDropdown'
 import { getMatchTypeBadgeClass } from '@/lib/matchTypeBadge'
-
-type MatchType = 'All' | 'Home and Home' | 'Practice' | 'Div 3' | 'Inter Uni' | 'SLUG'
+import type { MatchTypeFilter } from '@/lib/constants'
 
 interface PlayerInfo {
   _id: string
@@ -97,7 +96,7 @@ export default function PlayerPage() {
   const [bowling, setBowling] = useState<BowlingStats | null>(null)
   const [recentBatting, setRecentBatting] = useState<RecentBatting[]>([])
   const [recentBowling, setRecentBowling] = useState<RecentBowling[]>([])
-  const [matchType, setMatchType] = useState<MatchType>('All')
+  const [matchType, setMatchType] = useState<MatchTypeFilter>('All')
   const [loadingPlayer, setLoadingPlayer] = useState(true)
   const [loadingStats, setLoadingStats] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -194,7 +193,7 @@ export default function PlayerPage() {
           </div>
         </div>
         <div className="mt-4 sm:mt-3">
-          <MatchTypeDropdown value={matchType} onChange={(v) => { setLoadingStats(true); setMatchType(v as MatchType) }} />
+          <MatchTypeDropdown value={matchType} onChange={(v) => { setLoadingStats(true); setMatchType(v as MatchTypeFilter) }} />
         </div>
       </div>
 

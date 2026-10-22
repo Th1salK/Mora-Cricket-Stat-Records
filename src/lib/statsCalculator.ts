@@ -2,9 +2,10 @@ import BattingPerformance from '../models/BattingPerformance'
 import BowlingPerformance from '../models/BowlingPerformance'
 import Match from '../models/Match'
 import Player from "@/models/Player"
+import { MATCH_TYPES, type MatchTypeFilter } from '@/lib/constants'
 
-export const MATCH_TYPES = ['Home and Home', 'Practice', 'Div 3', 'Inter Uni', 'SLUG'] as const
-export type MatchType = typeof MATCH_TYPES[number] | 'All'
+export { MATCH_TYPES }
+export type MatchType = MatchTypeFilter
 
 type PopulatedPlayer = { _id: { toString(): string }; fullName: string } | null
 
