@@ -15,6 +15,7 @@ const publicLinks = [
 
 const adminLinks = [
   { href: '/stats/enter', label: 'Stats Entry' },
+  { href: '/admin/import', label: 'Import Match' },
 ]
 
 export default function Sidebar({ isAdmin }: { isAdmin: boolean }) {
