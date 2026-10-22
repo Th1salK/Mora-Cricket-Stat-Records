@@ -80,6 +80,7 @@ body {
 }
 .badge-home-and-home { background: rgba(59,130,246,0.2);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); }
 .badge-practice      { background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.35); }
+.badge-friendly      { background: rgba(6,182,212,0.15);  color: #22d3ee; border: 1px solid rgba(6,182,212,0.35); }
 .badge-div-3         { background: rgba(250,204,21,0.15);  color: #facc15; border: 1px solid rgba(250,204,21,0.35); }
 .badge-inter-uni     { background: rgba(139,92,246,0.2);   color: #a78bfa; border: 1px solid rgba(139,92,246,0.4); }
 .badge-slug          { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.35); }

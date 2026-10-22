@@ -32,12 +32,14 @@ export async function GET(req: Request, { params }: Params) {
     const matchIds = matches.map((m) => m._id)
 
     // ---- Batting ----
-    const battingPerfs = await BattingPerformance.find({
-      playerId: id,
-      matchId: { $in: matchIds },
-    })
-      .populate("matchId")
-      .lean()
+    const battingPerfs = (
+      await BattingPerformance.find({
+        playerId: id,
+        matchId: { $in: matchIds },
+      })
+        .populate({ path: "matchId", model: Match })
+        .lean()
+    ).filter((p) => p.matchId != null)
 
     const bTotalInnings = battingPerfs.length
     const bTotalRuns = battingPerfs.reduce((s, p) => s + (p.runs || 0), 0)
@@ -78,12 +80,14 @@ export async function GET(req: Request, { params }: Params) {
       })
 
     // ---- Bowling ----
-    const bowlingPerfs = await BowlingPerformance.find({
-      playerId: id,
-      matchId: { $in: matchIds },
-    })
-      .populate("matchId")
-      .lean()
+    const bowlingPerfs = (
+      await BowlingPerformance.find({
+        playerId: id,
+        matchId: { $in: matchIds },
+      })
+        .populate({ path: "matchId", model: Match })
+        .lean()
+    ).filter((p) => p.matchId != null)
 
     const wTotalBalls = bowlingPerfs.reduce((s, p) => s + (p.balls || 0), 0)
     const wTotalRuns = bowlingPerfs.reduce((s, p) => s + (p.runs || 0), 0)

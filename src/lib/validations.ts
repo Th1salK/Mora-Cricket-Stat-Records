@@ -1,6 +1,6 @@
 import { z } from "zod"
+import { MATCH_TYPES } from "@/lib/constants"
 
-const MATCH_TYPES = ["Home and Home", "Practice", "Div 3", "Inter Uni", "SLUG"] as const
 const VENUES = ["Home", "Away"] as const
 const BATTING_STYLES = ["Right Hand Bat", "Left Hand Bat"] as const
 const ROLES = ["Batsman", "Bowler", "All-rounder", "Wicket-keeper"] as const

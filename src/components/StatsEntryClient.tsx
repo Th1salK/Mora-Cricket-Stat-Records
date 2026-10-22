@@ -1,8 +1,7 @@
 "use client"
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-type MatchType = 'Home and Home' | 'Practice' | 'Div 3' | 'Inter Uni' | 'SLUG'
+import { MATCH_TYPES, type MatchTypeValue } from '@/lib/constants'
 
 type Player = {
   _id: string
@@ -17,7 +16,7 @@ type Match = {
   opponent: string
   venue: 'Home' | 'Away'
   overs: number
-  matchType: MatchType
+  matchType: MatchTypeValue
 }
 
 type BattingEntry = {
@@ -37,8 +36,6 @@ type BowlingEntry = {
   wides: string
   noBalls: string
 }
-
-const MATCH_TYPES: MatchType[] = ['Home and Home', 'Practice', 'Div 3', 'Inter Uni', 'SLUG']
 
 const roleBadge: Record<string, string> = {
   Batsman: 'bg-blue-600/20 text-blue-300 border border-blue-500/30',
@@ -119,7 +116,7 @@ export default function StatsEntryClient({
     opponent: string
     venue: 'Home' | 'Away'
     overs: number
-    matchType: MatchType
+    matchType: MatchTypeValue
   }>({ date: '', opponent: '', venue: 'Home', overs: 40, matchType: 'Home and Home' })
 
   // ---- Step 2: squad ----

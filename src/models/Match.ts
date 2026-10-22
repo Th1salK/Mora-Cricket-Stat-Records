@@ -1,11 +1,12 @@
 import mongoose, { Document, Model } from 'mongoose'
+import { MATCH_TYPES, type MatchTypeValue } from '@/lib/constants'
 
 export interface IMatch extends Document {
   date: Date
   opponent: string
   venue: 'Home' | 'Away'
   overs: number,
-  matchType: 'Home and Home' | 'Practice' | 'Div 3'|'Inter Uni' | 'SLUG'
+  matchType: MatchTypeValue
   createdAt: Date
   updatedAt: Date
 }
@@ -18,7 +19,7 @@ const MatchSchema = new mongoose.Schema<IMatch>(
     overs: { type: Number, required: true,min:1 },
     matchType: {
       type: String,
-      enum: ['Home and Home','Practice','Div 3','Inter Uni','SLUG'],
+      enum: [...MATCH_TYPES],
       required: true,
     },
   },
