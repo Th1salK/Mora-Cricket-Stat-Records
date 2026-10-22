@@ -171,7 +171,7 @@ export async function getPlayerBowlingStats(matchType: MatchType = 'All'): Promi
   const matchIds = matches.map((m) => m._id)
 
   const performances = await BowlingPerformance.find({ matchId: { $in: matchIds } })
-    .populate('playerId')
+    .populate({ path: 'playerId', model: Player })
     .lean()
 
   const grouped: Record<string, { name: string; perfs: typeof performances }> = {}
