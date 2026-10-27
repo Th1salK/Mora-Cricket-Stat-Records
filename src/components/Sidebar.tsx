@@ -14,7 +14,6 @@ const publicLinks = [
 ]
 
 const adminLinks = [
-  { href: '/stats/enter', label: 'Stats Entry' },
   { href: '/admin/import', label: 'Import Match' },
 ]
 

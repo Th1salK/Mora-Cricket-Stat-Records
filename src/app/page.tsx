@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { isAdmin } from '@/lib/auth'
 
-export default function Home() {
+export default async function Home() {
+  const admin = await isAdmin()
   return (
     <div className="space-y-8">
       {/* Team Header */}
@@ -15,12 +17,12 @@ export default function Home() {
           Quick Actions
         </h2>
         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
-          <Link
-            href="/stats/enter"
+          {admin && <Link
+            href="/admin/import"
             className="bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg px-5 py-3 transition-colors text-sm text-center"
           >
-            Enter Match Stats
-          </Link>
+            Import Match
+          </Link>}
           <Link
             href="/career"
             className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/40 font-semibold rounded-lg px-5 py-3 transition-colors text-sm text-center"

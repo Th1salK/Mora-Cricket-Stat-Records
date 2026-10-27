@@ -2,42 +2,39 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import MatchTypeDropdown from "./MatchTypeDropdown"
+import { useRouter, useSearchParams } from "next/navigation"
+import MatchTypeDropdown from "@/components/MatchTypeDropdown"
+import SeasonDropdown from "@/components/SeasonDropdown"
+import { seasonLabel } from "@/lib/stats/seasons"
+import { compareNullable } from "@/lib/stats/sort"
+import { fmtNumber, fmtHighScore } from "@/lib/stats/format"
+import type { BattingTableRow as PlayerBattingRow } from "@/lib/queries/stats"
 
-interface PlayerBattingRow {
-  playerId: string
-  playerName: string
-  innings: number
-  runs: number
-  average: number
-  strikeRate: number
-  highScore: number
-  notOuts: number
-  ducks: number
-  fifties: number
-  hundreds: number
-  fours: number
-  sixes: number
-}
 
-type SortKey = keyof Omit<PlayerBattingRow, "playerId" | "playerName">
+
+type SortKey = "innings" | "runs" | "average" | "strikeRate" | "highScore" | "notOuts" | "ducks" | "fifties" | "hundreds" | "fours" | "sixes"
 type SortDir = "asc" | "desc"
 
 export default function BattingStatsClient({
   rows,
-  currentMatchType,
+  currentMatchType, seasons, currentSeason, seasonName,
 }: {
   rows: PlayerBattingRow[]
   currentMatchType: string
+  seasons: { id: string; name: string }[]
+  currentSeason: string
+  seasonName: string | null
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [sortKey, setSortKey] = useState<SortKey>("runs")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
 
   function handleMatchTypeChange(val: string) {
-    const qs = val === "All" ? "" : `?matchType=${encodeURIComponent(val)}`
-    router.push(`/stats/batting${qs}`)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("matchType", val)
+    params.set("season", currentSeason)
+    router.push("/stats/batting?" + params.toString())
   }
 
   function handleSort(key: SortKey) {
@@ -52,8 +49,7 @@ export default function BattingStatsClient({
   const sorted = [...rows].sort((a, b) => {
     const av = a[sortKey]
     const bv = b[sortKey]
-    const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv))
-    return sortDir === "desc" ? -cmp : cmp
+    return compareNullable(av, bv, sortDir)
   })
 
   const cols: { key: SortKey; label: string }[] = [
@@ -80,9 +76,12 @@ export default function BattingStatsClient({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-white text-2xl font-bold">Batting Stats</h1>
-          <p className="text-slate-400 text-sm mt-1">Per-player batting performance</p>
+          <p className="text-slate-400 text-sm mt-1">{seasonName ? seasonLabel(seasonName) : "All seasons"}</p>
         </div>
-        <MatchTypeDropdown value={currentMatchType} onChange={handleMatchTypeChange} includeAll />
+        <div className="flex flex-wrap gap-3">
+          <SeasonDropdown seasons={seasons} value={currentSeason} />
+          <MatchTypeDropdown value={currentMatchType} onChange={handleMatchTypeChange} includeAll />
+        </div>
       </div>
 
       {rows.length === 0 ? (
@@ -115,9 +114,9 @@ export default function BattingStatsClient({
                   </td>
                   <td className="px-4 py-3 text-slate-300">{r.innings}</td>
                   <td className="px-4 py-3 text-white font-medium">{r.runs}</td>
-                  <td className="px-4 py-3 text-slate-300">{r.average === 0 ? "-" : r.average}</td>
-                  <td className="px-4 py-3 text-slate-300">{r.strikeRate === 0 ? "-" : r.strikeRate}</td>
-                  <td className="px-4 py-3 text-slate-300">{r.highScore}</td>
+                  <td className="px-4 py-3 text-slate-300">{fmtNumber(r.average)}</td>
+                  <td className="px-4 py-3 text-slate-300">{fmtNumber(r.strikeRate)}</td>
+                  <td className="px-4 py-3 text-slate-300">{fmtHighScore(r.highScore, r.highScoreNotOut)}</td>
                   <td className="px-4 py-3 text-slate-300">{r.notOuts}</td>
                   <td className="px-4 py-3 text-slate-300">{r.fifties}</td>
                   <td className="px-4 py-3 text-slate-300">{r.hundreds}</td>

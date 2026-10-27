@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 import mongoose from "mongoose"
-import { connectDB } from "../../../../lib/mongodb"
-import { assertCanWrite } from "../../../../lib/auth"
-import { checkApiRateLimit, apiLockoutSeconds } from "../../../../lib/rateLimit"
-import { matchSchema } from "../../../../lib/validations"
-import Match from "../../../../models/Match"
-import BattingPerformance from "../../../../models/BattingPerformance"
-import BowlingPerformance from "../../../../models/BowlingPerformance"
+import { connectDB } from "@/lib/mongodb"
+import { assertCanWrite } from "@/lib/auth"
+import { checkApiRateLimit, apiLockoutSeconds } from "@/lib/rateLimit"
+import { matchSchema } from "@/lib/validations"
+import { ensureSeasonForDate } from "@/lib/seasonsServer"
+import Match from "@/models/Match"
+import BattingPerformance from "@/models/BattingPerformance"
+import BowlingPerformance from "@/models/BowlingPerformance"
 
 class MatchNotFoundError extends Error {
   constructor() {
@@ -22,7 +23,7 @@ export async function GET(
   try {
     await connectDB()
     const { id } = await params
-    const match = await Match.findById(id).lean()
+    const match = await Match.findById(id).select('-season').lean()
     if (!match) return NextResponse.json({ error: "Not found" }, { status: 404 })
     return NextResponse.json(match)
   } catch {
@@ -54,11 +55,12 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }, { status: 400 })
     }
 
+    const seasonId = await ensureSeasonForDate(new Date(parsed.data.date))
     const updated = await Match.findByIdAndUpdate(
       id,
-      parsed.data,
+      { ...parsed.data, season: seasonId },
       { new: true, runValidators: true }
-    )
+    ).select('-season')
 
     if (!updated) return NextResponse.json({ error: "Match not found" }, { status: 404 })
     return NextResponse.json(updated)
