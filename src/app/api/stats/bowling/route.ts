@@ -1,27 +1,12 @@
-import { NextRequest, NextResponse } from "next/server"
-import { connectDB } from "../../../../lib/mongodb"
-import { getPlayerBowlingStats, MatchType, MATCH_TYPES } from "../../../../lib/statsCalculator"
-
+import { NextRequest, NextResponse } from 'next/server'
+import { getBowlingTable, resolveFilter } from '@/lib/queries/stats'
+import { bowlingTableApi } from '@/lib/stats/api'
 export async function GET(request: NextRequest) {
   try {
-    await connectDB()
-    const { searchParams } = new URL(request.url)
-    const matchTypeParam = searchParams.get("matchType") || "All"
-    const perPlayer = searchParams.get("perPlayer") === "true"
-
-    const validTypes: string[] = [...MATCH_TYPES, "All"]
-    const matchType: MatchType = validTypes.includes(matchTypeParam)
-      ? (matchTypeParam as MatchType)
-      : "All"
-
-    if (perPlayer) {
-      const rows = await getPlayerBowlingStats(matchType)
-      return NextResponse.json(rows)
-    }
-
-    const stats = await getPlayerBowlingStats(matchType)
-    return NextResponse.json(stats)
+    const params = request.nextUrl.searchParams
+    const filter = await resolveFilter({ season: params.get('season'), matchType: params.get('matchType') })
+    return NextResponse.json((await getBowlingTable(filter)).map(bowlingTableApi))
   } catch {
-    return NextResponse.json({ error: "Failed to compute bowling stats" }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to compute bowling stats' }, { status: 500 })
   }
 }

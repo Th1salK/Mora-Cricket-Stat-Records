@@ -1,22 +1,14 @@
-import StatCard from "../../components/StatCard"
-import { getMatchTypeBadgeClass } from "../../lib/matchTypeBadge"
-import {
-  getBattingStats,
-  getBowlingStats,
-  getBreakdownStats,
-  MATCH_TYPES,
-  BreakdownEntry,
-} from "../../lib/statsCalculator"
-import { connectDB } from "../../lib/mongodb"
+import StatCard from "@/components/StatCard"
+import { getMatchTypeBadgeClass } from "@/lib/matchTypeBadge"
+import { MATCH_TYPES } from "@/lib/constants"
+import { getTeamOverview, getBreakdownByMatchType } from "@/lib/queries/stats"
+import { fmtNumber, fmtFigures, fmtHighScore, fmtOvers } from "@/lib/stats/format"
+type BreakdownEntry = Awaited<ReturnType<typeof getTeamOverview>>
 
 export default async function CareerPage() {
-  await connectDB()
-
-  const [batting, bowling, breakdown] = await Promise.all([
-    getBattingStats(),
-    getBowlingStats(),
-    getBreakdownStats(),
-  ])
+  const filter = { seasonId: "all", matchType: "All" } as const
+  const [overview, breakdown] = await Promise.all([getTeamOverview(filter), getBreakdownByMatchType(filter)])
+  const { batting, bowling } = overview
 
   const activeTypes = MATCH_TYPES.filter(
     (t) => breakdown[t] && breakdown[t].matchCount > 0
@@ -27,7 +19,7 @@ export default async function CareerPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-white text-2xl font-bold">Career Overview</h1>
-        <p className="text-slate-400 text-sm mt-1">All-time statistics across all formats</p>
+        <p className="text-slate-400 text-sm mt-1">All seasons · All match types</p>
       </div>
 
       {/* Batting Section */}
@@ -36,11 +28,11 @@ export default async function CareerPage() {
           Batting
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Innings" value={batting.totalInnings} />
-          <StatCard label="Runs" value={batting.totalRuns} />
-          <StatCard label="Average" value={batting.average === 0 ? "-" : batting.average} />
-          <StatCard label="Strike Rate" value={batting.strikeRate === 0 ? "-" : batting.strikeRate} />
-          <StatCard label="High Score" value={batting.highScore} />
+          <StatCard label="Innings" value={batting.innings} />
+          <StatCard label="Runs" value={batting.runs} />
+          <StatCard label="Average" value={fmtNumber(batting.average)} />
+          <StatCard label="Strike Rate" value={fmtNumber(batting.strikeRate)} />
+          <StatCard label="High Score" value={fmtHighScore(batting.highScore, batting.highScoreNotOut)} />
           <StatCard label="50s" value={batting.fifties} />
           <StatCard label="100s" value={batting.hundreds} />
           <StatCard label="Ducks" value={batting.ducks} />
@@ -53,11 +45,11 @@ export default async function CareerPage() {
           Bowling
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Wickets" value={bowling.totalWickets} />
-          <StatCard label="Overs" value={bowling.overs} />
-          <StatCard label="Average" value={bowling.average === 0 ? "-" : bowling.average} />
-          <StatCard label="Economy" value={bowling.economy === 0 ? "-" : bowling.economy} />
-          <StatCard label="Best Figures" value={bowling.bestFigures} />
+          <StatCard label="Wickets" value={bowling.wickets} />
+          <StatCard label="Overs" value={fmtOvers(bowling.balls)} />
+          <StatCard label="Average" value={fmtNumber(bowling.average)} />
+          <StatCard label="Economy" value={fmtNumber(bowling.economy)} />
+          <StatCard label="Best Figures" value={fmtFigures(bowling.best)} />
           <StatCard label="5-Wicket Hauls" value={bowling.fiveWickets} />
         </div>
       </section>
@@ -83,13 +75,13 @@ export default async function CareerPage() {
               <tbody>
                 {[
                   { label: "Matches", getValue: (e: BreakdownEntry) => e.matchCount },
-                  { label: "Runs", getValue: (e: BreakdownEntry) => e.batting.totalRuns },
-                  { label: "Avg", getValue: (e: BreakdownEntry) => e.batting.average === 0 ? "-" : e.batting.average },
-                  { label: "SR", getValue: (e: BreakdownEntry) => e.batting.strikeRate === 0 ? "-" : e.batting.strikeRate },
-                  { label: "HS", getValue: (e: BreakdownEntry) => e.batting.highScore },
-                  { label: "Wickets", getValue: (e: BreakdownEntry) => e.bowling.totalWickets },
-                  { label: "Economy", getValue: (e: BreakdownEntry) => e.bowling.economy === 0 ? "-" : e.bowling.economy },
-                  { label: "Best", getValue: (e: BreakdownEntry) => e.bowling.bestFigures },
+                  { label: "Runs", getValue: (e: BreakdownEntry) => e.batting.runs },
+                  { label: "Avg", getValue: (e: BreakdownEntry) => fmtNumber(e.batting.average) },
+                  { label: "SR", getValue: (e: BreakdownEntry) => fmtNumber(e.batting.strikeRate) },
+                  { label: "HS", getValue: (e: BreakdownEntry) => fmtHighScore(e.batting.highScore, e.batting.highScoreNotOut) },
+                  { label: "Wickets", getValue: (e: BreakdownEntry) => e.bowling.wickets },
+                  { label: "Economy", getValue: (e: BreakdownEntry) => fmtNumber(e.bowling.economy) },
+                  { label: "Best", getValue: (e: BreakdownEntry) => fmtFigures(e.bowling.best) },
                 ].map((row) => (
                   <tr key={row.label} className="border-b border-white/5 hover:bg-blue-900/10 transition-colors">
                     <td className="px-4 py-3 text-yellow-400 text-sm font-medium">{row.label}</td>

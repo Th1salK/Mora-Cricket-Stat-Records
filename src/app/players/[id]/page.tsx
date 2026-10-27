@@ -1,9 +1,14 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import MatchTypeDropdown from '@/components/MatchTypeDropdown'
 import { getMatchTypeBadgeClass } from '@/lib/matchTypeBadge'
-import type { MatchTypeFilter } from '@/lib/constants'
+import { MATCH_TYPES, type MatchTypeFilter } from '@/lib/constants'
+import SeasonDropdown from '@/components/SeasonDropdown'
+import { seasonLabel } from '@/lib/stats/seasons'
+import { fmtNumber, fmtHighScore, fmtFigures, fmtOvers } from '@/lib/stats/format'
+import type { battingApi, bowlingApi } from '@/lib/stats/api'
+import type { getPlayerStats } from '@/lib/queries/stats'
 
 interface PlayerInfo {
   _id: string
@@ -15,34 +20,10 @@ interface PlayerInfo {
   isActive: boolean
 }
 
-interface BattingStats {
-  totalInnings: number
-  totalRuns: number
-  totalBalls: number
-  average: number
-  strikeRate: number
-  highScore: number
-  notOuts: number
-  ducks: number
-  fours: number
-  sixes: number
-  fifties: number
-  hundreds: number
-}
+type BattingStats = ReturnType<typeof battingApi>
 
-interface BowlingStats {
-  totalBalls: number
-  totalRuns: number
-  totalWickets: number
-  totalWides: number
-  totalNoBalls: number
-  overs: string
-  average: number
-  economy: number
-  strikeRate: number
-  bestFigures: string
-  fiveWickets: number
-}
+type BowlingStats = ReturnType<typeof bowlingApi>
+type Breakdown = Awaited<ReturnType<typeof getPlayerStats>>["byMatchType"]
 
 interface RecentBatting {
   matchId: string
@@ -73,16 +54,12 @@ function initials(name?: string) {
   return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
 }
 
-function fmt(val: number | null | undefined, decimals = 2) {
-  if (val == null) return '—'
-  return Number(val).toFixed(decimals)
-}
-
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({ label, value, note }: { label: string; value: string | number; note?: string }) {
   return (
     <div className="glass-blue rounded-xl p-4 flex flex-col gap-1">
       <div className="text-xs text-slate-400 font-medium uppercase tracking-wide">{label}</div>
       <div className="text-2xl font-bold text-white">{value}</div>
+      {note && <div className="text-xs text-slate-400">{note}</div>}
     </div>
   )
 }
@@ -90,45 +67,92 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [player, setPlayer] = useState<PlayerInfo | null>(null)
   const [batting, setBatting] = useState<BattingStats | null>(null)
   const [bowling, setBowling] = useState<BowlingStats | null>(null)
   const [recentBatting, setRecentBatting] = useState<RecentBatting[]>([])
   const [recentBowling, setRecentBowling] = useState<RecentBowling[]>([])
-  const [matchType, setMatchType] = useState<MatchTypeFilter>('All')
+  const [byMatchType, setByMatchType] = useState<Breakdown>({})
+  const [seasonData, setSeasonData] = useState<{ seasons: { id: string; name: string }[]; currentSeasonId: string | null } | null>(null)
   const [loadingPlayer, setLoadingPlayer] = useState(true)
-  const [loadingStats, setLoadingStats] = useState(true)
+  const [loadedKey, setLoadedKey] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [statsError, setStatsError] = useState<string | null>(null)
+  const typeParam = searchParams.get('matchType')
+  const matchType: MatchTypeFilter = MATCH_TYPES.includes(typeParam as typeof MATCH_TYPES[number])
+    ? typeParam as typeof MATCH_TYPES[number] : 'All'
+  const requestedSeason = searchParams.get('season')
+  const season = requestedSeason === 'all' || seasonData?.seasons.some((s) => s.id === requestedSeason)
+    ? requestedSeason! : seasonData?.currentSeasonId ?? 'all'
+  const statsKey = id + ':' + season + ':' + matchType
+  const loadingStats = !seasonData || loadedKey !== statsKey
 
-  // Fetch player info once
   useEffect(() => {
-    if (!id) return
-    fetch(`/api/players/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error('Player not found')
-        return r.json()
-      })
-      .then((data) => setPlayer(data))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoadingPlayer(false))
+    const controller = new AbortController()
+    async function loadPlayer() {
+      try {
+        const response = await fetch(`/api/players/${id}`, { signal: controller.signal })
+        if (!response.ok) throw new Error('Player not found')
+        setPlayer(await response.json())
+      } catch (err) {
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Could not load player')
+      } finally {
+        if (!controller.signal.aborted) setLoadingPlayer(false)
+      }
+    }
+    void loadPlayer()
+    return () => controller.abort()
   }, [id])
 
-  // Fetch stats whenever matchType changes
   useEffect(() => {
-    if (!id) return
-    const qs = matchType === 'All' ? '' : `?matchType=${encodeURIComponent(matchType)}`
-    fetch(`/api/players/${id}/stats${qs}`)
-      .then((r) => r.json())
-      .then((data) => {
+    const controller = new AbortController()
+    async function loadSeasons() {
+      try {
+        const response = await fetch('/api/seasons', { signal: controller.signal })
+        if (!response.ok) throw new Error('Could not load seasons')
+        setSeasonData(await response.json())
+      } catch (err) {
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Could not load seasons')
+      }
+    }
+    void loadSeasons()
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    if (!seasonData) return
+    const controller = new AbortController()
+    async function loadStats() {
+      try {
+        const params = new URLSearchParams({ season, matchType })
+        const response = await fetch(`/api/players/${id}/stats?${params}`, { signal: controller.signal })
+        if (!response.ok) throw new Error('Could not load statistics')
+        const data: { batting: BattingStats; bowling: BowlingStats; byMatchType: Breakdown;
+          recentBatting: RecentBatting[]; recentBowling: RecentBowling[] } = await response.json()
         setBatting(data.batting)
         setBowling(data.bowling)
-        setRecentBatting(data.recentBatting ?? [])
-        setRecentBowling(data.recentBowling ?? [])
-      })
-      .catch(console.error)
-      .finally(() => setLoadingStats(false))
-  }, [id, matchType])
+        setByMatchType(data.byMatchType)
+        setRecentBatting(data.recentBatting)
+        setRecentBowling(data.recentBowling)
+        setStatsError(null)
+      } catch (err) {
+        if (!controller.signal.aborted) setStatsError(err instanceof Error ? err.message : 'Could not load statistics')
+      } finally {
+        if (!controller.signal.aborted) setLoadedKey(statsKey)
+      }
+    }
+    void loadStats()
+    return () => controller.abort()
+  }, [id, season, matchType, seasonData, statsKey])
+
+  function changeMatchType(value: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('matchType', value)
+    params.set('season', season)
+    router.push(`/players/${id}?${params}`)
+  }
 
   if (loadingPlayer) {
     return (
@@ -193,15 +217,20 @@ export default function PlayerPage() {
           </div>
         </div>
         <div className="mt-4 sm:mt-3">
-          <MatchTypeDropdown value={matchType} onChange={(v) => { setLoadingStats(true); setMatchType(v as MatchTypeFilter) }} />
+          <div className="flex flex-wrap gap-3">
+            <SeasonDropdown seasons={seasonData?.seasons ?? []} value={season} />
+            <MatchTypeDropdown value={matchType} onChange={changeMatchType} />
+          </div>
+          <p className="mt-2 text-sm text-slate-400">{season === "all" ? "All seasons" : seasonLabel(seasonData?.seasons.find((s) => s.id === season)?.name ?? "")}</p>
         </div>
       </div>
 
+      {statsError && !loadingStats && <p role="alert" className="text-red-400">{statsError}</p>}
       {loadingStats ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
         </div>
-      ) : (
+      ) : statsError ? null : (
         <>
           {/* Batting Stats */}
           <div className="glass p-6">
@@ -210,9 +239,9 @@ export default function PlayerPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 <StatCard label="Innings" value={batting.totalInnings} />
                 <StatCard label="Runs" value={batting.totalRuns} />
-                <StatCard label="Average" value={fmt(batting.average)} />
-                <StatCard label="Strike Rate" value={fmt(batting.strikeRate)} />
-                <StatCard label="High Score" value={batting.highScore} />
+                <StatCard label="Average" value={fmtNumber(batting.average)} note={batting.average === null ? "Not out in every innings" : undefined} />
+                <StatCard label="Strike Rate" value={fmtNumber(batting.strikeRate)} />
+                <StatCard label="High Score" value={fmtHighScore(batting.highScore, batting.highScoreNotOut)} />
                 <StatCard label="Not Outs" value={batting.notOuts} />
                 <StatCard label="4s" value={batting.fours} />
                 <StatCard label="6s" value={batting.sixes} />
@@ -234,9 +263,9 @@ export default function PlayerPage() {
                 <StatCard label="Wickets" value={bowling.totalWickets} />
                 <StatCard label="Overs" value={bowling.overs} />
                 <StatCard label="Runs" value={bowling.totalRuns} />
-                <StatCard label="Average" value={fmt(bowling.average)} />
-                <StatCard label="Economy" value={fmt(bowling.economy)} />
-                <StatCard label="Strike Rate" value={fmt(bowling.strikeRate)} />
+                <StatCard label="Average" value={fmtNumber(bowling.average)} />
+                <StatCard label="Economy" value={fmtNumber(bowling.economy)} />
+                <StatCard label="Strike Rate" value={fmtNumber(bowling.strikeRate)} />
                 <StatCard label="Best" value={bowling.bestFigures} />
                 <StatCard label="5-wkts" value={bowling.fiveWickets} />
                 <StatCard label="Wides" value={bowling.totalWides} />
@@ -246,6 +275,31 @@ export default function PlayerPage() {
               <p className="text-slate-500 text-sm">No bowling data for this filter.</p>
             )}
           </div>
+
+          {Object.keys(byMatchType).length > 0 && (
+            <div className="glass p-6">
+              <h2 className="text-white text-lg font-semibold border-l-4 border-yellow-400 pl-3 mb-4">By match type</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-white/10"><tr>
+                    {['Type', 'Inns', 'Runs', 'Avg', 'SR', 'HS', 'Wkts', 'Econ', 'Best'].map((label) => (
+                      <th key={label} className="px-3 py-2 text-left text-yellow-400 font-semibold whitespace-nowrap">{label}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>{Object.entries(byMatchType).map(([type, stats]) => (
+                    <tr key={type} className="border-b border-white/5 hover:bg-blue-900/10 transition-colors">
+                      <td className="px-3 py-2"><span className={getMatchTypeBadgeClass(type)}>{type}</span></td>
+                      {[stats.batting.innings, stats.batting.runs, fmtNumber(stats.batting.average), fmtNumber(stats.batting.strikeRate),
+                        fmtHighScore(stats.batting.highScore, stats.batting.highScoreNotOut), stats.bowling.wickets,
+                        fmtNumber(stats.bowling.economy), fmtFigures(stats.bowling.best)].map((value, index) => (
+                        <td key={index} className="px-3 py-2 text-slate-300">{value}</td>
+                      ))}
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Recent Batting */}
           <div className="glass p-6">
@@ -314,7 +368,7 @@ export default function PlayerPage() {
                         <td className="px-3 py-2">
                           <span className={getMatchTypeBadgeClass(r.matchType)}>{r.matchType}</span>
                         </td>
-                        <td className="px-3 py-2 text-slate-300">{Math.floor(r.balls / 6)}.{r.balls % 6}</td>
+                        <td className="px-3 py-2 text-slate-300">{fmtOvers(r.balls)}</td>
                         <td className="px-3 py-2 text-slate-300">{r.runs}</td>
                         <td className="px-3 py-2 text-white font-medium">{r.wickets}</td>
                         <td className="px-3 py-2 text-slate-300">{r.wides}</td>

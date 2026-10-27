@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentUser } from "@/lib/auth"
 import { connectDB } from "@/lib/mongodb"
+import { ensureSeasonForDate } from "@/lib/seasonsServer"
 import BattingPerformance from "@/models/BattingPerformance"
 import BowlingPerformance from "@/models/BowlingPerformance"
 import ImportDraft from "@/models/ImportDraft"
@@ -309,11 +310,12 @@ export async function publishAction(
   let matchId = ""
 
   try {
+    const seasonId = await ensureSeasonForDate(new Date(payload.match.date))
     const session = await mongoose.startSession()
     try {
       await session.withTransaction(async () => {
         const [match] = await Match.create(
-          [{ ...payload.match, date: new Date(payload.match.date) }],
+          [{ ...payload.match, date: new Date(payload.match.date), season: seasonId }],
           { session }
         )
 

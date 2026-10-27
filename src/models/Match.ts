@@ -31,6 +31,7 @@ export type MatchInnings = {
 
 export interface IMatch extends Document {
   date: Date
+  season?: mongoose.Types.ObjectId
   opponent: string
   venue: 'Home' | 'Away'
   overs: number
@@ -70,6 +71,7 @@ const InningsSchema = new mongoose.Schema(
 const MatchSchema = new mongoose.Schema<IMatch>(
   {
     date: { type: Date, required: true },
+    season: { type: mongoose.Schema.Types.ObjectId, ref: 'Season', index: true },
     opponent: { type: String, required: true },
     venue: { type: String, enum: ['Home', 'Away'], required: true },
     overs: { type: Number, required: true,min:1 },

@@ -2,40 +2,39 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import MatchTypeDropdown from "./MatchTypeDropdown"
+import { useRouter, useSearchParams } from "next/navigation"
+import MatchTypeDropdown from "@/components/MatchTypeDropdown"
+import SeasonDropdown from "@/components/SeasonDropdown"
+import { seasonLabel } from "@/lib/stats/seasons"
+import { compareNullable } from "@/lib/stats/sort"
+import { fmtNumber, fmtFigures, fmtOvers } from "@/lib/stats/format"
+import type { BowlingTableRow as PlayerBowlingRow } from "@/lib/queries/stats"
 
-interface PlayerBowlingRow {
-  playerId: string
-  playerName: string
-  wickets: number
-  overs: string
-  average: number
-  economy: number
-  strikeRate: number
-  bestFigures: string
-  fiveWickets: number
-  wides: number
-  noBalls: number
-}
 
-type SortKey = keyof Omit<PlayerBowlingRow, "playerId" | "playerName" | "overs" | "bestFigures">
+
+type SortKey = "wickets" | "economy" | "average" | "strikeRate" | "fiveWickets" | "wides" | "noBalls"
 type SortDir = "asc" | "desc"
 
 export default function BowlingStatsClient({
   rows,
-  currentMatchType,
+  currentMatchType, seasons, currentSeason, seasonName,
 }: {
   rows: PlayerBowlingRow[]
   currentMatchType: string
+  seasons: { id: string; name: string }[]
+  currentSeason: string
+  seasonName: string | null
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [sortKey, setSortKey] = useState<SortKey>("wickets")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
 
   function handleMatchTypeChange(val: string) {
-    const qs = val === "All" ? "" : `?matchType=${encodeURIComponent(val)}`
-    router.push(`/stats/bowling${qs}`)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("matchType", val)
+    params.set("season", currentSeason)
+    router.push("/stats/bowling?" + params.toString())
   }
 
   function handleSort(key: SortKey) {
@@ -50,8 +49,7 @@ export default function BowlingStatsClient({
   const sorted = [...rows].sort((a, b) => {
     const av = a[sortKey]
     const bv = b[sortKey]
-    const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv))
-    return sortDir === "desc" ? -cmp : cmp
+    return compareNullable(av, bv, sortDir)
   })
 
   const cols: { key: SortKey; label: string }[] = [
@@ -74,9 +72,12 @@ export default function BowlingStatsClient({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-white text-2xl font-bold">Bowling Stats</h1>
-          <p className="text-slate-400 text-sm mt-1">Per-player bowling performance</p>
+          <p className="text-slate-400 text-sm mt-1">{seasonName ? seasonLabel(seasonName) : "All seasons"}</p>
         </div>
-        <MatchTypeDropdown value={currentMatchType} onChange={handleMatchTypeChange} includeAll />
+        <div className="flex flex-wrap gap-3">
+          <SeasonDropdown seasons={seasons} value={currentSeason} />
+          <MatchTypeDropdown value={currentMatchType} onChange={handleMatchTypeChange} includeAll />
+        </div>
       </div>
 
       {rows.length === 0 ? (
@@ -110,14 +111,14 @@ export default function BowlingStatsClient({
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-white font-medium">{r.wickets}</td>
-                  <td className="px-4 py-3 text-slate-300">{r.economy === 0 ? "-" : r.economy}</td>
-                  <td className="px-4 py-3 text-slate-300">{r.average === 0 ? "-" : r.average}</td>
-                  <td className="px-4 py-3 text-slate-300">{r.strikeRate === 0 ? "-" : r.strikeRate}</td>
+                  <td className="px-4 py-3 text-slate-300">{fmtNumber(r.economy)}</td>
+                  <td className="px-4 py-3 text-slate-300">{fmtNumber(r.average)}</td>
+                  <td className="px-4 py-3 text-slate-300">{fmtNumber(r.strikeRate)}</td>
                   <td className="px-4 py-3 text-slate-300">{r.fiveWickets}</td>
                   <td className="px-4 py-3 text-slate-300">{r.wides}</td>
                   <td className="px-4 py-3 text-slate-300">{r.noBalls}</td>
-                  <td className="px-4 py-3 text-slate-300">{r.overs}</td>
-                  <td className="px-4 py-3 text-slate-300">{r.bestFigures}</td>
+                  <td className="px-4 py-3 text-slate-300">{fmtOvers(r.balls)}</td>
+                  <td className="px-4 py-3 text-slate-300">{fmtFigures(r.best)}</td>
                 </tr>
               ))}
             </tbody>
