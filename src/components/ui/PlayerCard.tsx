@@ -1,0 +1,8 @@
+import Link from 'next/link'
+import type { PlayerCardRow } from '@/lib/queries/playerCards'
+import { roleColors } from '@/lib/ui/formatColors'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
+import { RoleChip } from '@/components/ui/RoleChip'
+export function PlayerCard({ player, seasonId, seasonLabel }: { player: PlayerCardRow; seasonId: string; seasonLabel: string }) {
+  return <Link href={`/players/${player.id}?season=${seasonId}`} className="overflow-hidden rounded-[14px] border border-separator bg-surface hover:border-accent"><div className="relative flex h-28 items-center justify-center md:h-40" style={{ background: `color-mix(in srgb, ${roleColors[player.role]} 20%, var(--surface))` }}><span className="absolute top-3 left-3 hidden md:block"><RoleChip role={player.role} /></span><PlayerAvatar name={player.fullName} role={player.role} size={56} /></div><div className="p-3 md:p-4"><h2 className="font-semibold">{player.fullName}</h2><p className="mt-1 text-xs text-text-secondary md:hidden">{player.role} · {player.role === 'Bowler' ? player.wickets + ' wkts' : player.runs + ' runs'}{!player.isActive ? ' · Inactive' : ''}</p><p className="mt-1 hidden text-xs text-text-secondary md:block">{player.matches} matches · {seasonLabel}{!player.isActive ? ' · Inactive' : ''}</p><div className="mt-3 hidden grid-cols-3 md:grid rounded-[10px] bg-surface-secondary p-2 text-center text-sm">{[[player.runs, 'Runs'], [player.wickets, 'Wkts'], [player.matches, 'Mat']].map(([value, label]) => <div key={label}><strong>{value}</strong><p className="text-xs text-text-secondary">{label}</p></div>)}</div></div></Link>
+}

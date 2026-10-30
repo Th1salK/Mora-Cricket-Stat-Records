@@ -1,4 +1,6 @@
 import mongoose from 'mongoose'
+import { dashboardTotals } from '@/lib/queries/dashboardRows'
+import { recentMilestones } from '@/lib/stats/milestones'
 import { MATCH_TYPES, type MatchTypeFilter } from '@/lib/constants'
 import { connectDB } from '@/lib/mongodb'
 import { getCurrentSeason } from '@/lib/seasonsServer'
@@ -19,8 +21,8 @@ import BattingPerformance from '@/models/BattingPerformance'
 import BowlingPerformance from '@/models/BowlingPerformance'
 
 export type StatsFilter = { seasonId: string | 'all'; matchType: MatchTypeFilter }
-export type BattingTableRow = PlayerInfo & BattingSummary
-export type BowlingTableRow = PlayerInfo & BowlingSummary & { overs: string }
+export type BattingTableRow = PlayerInfo & BattingSummary & { matches: number }
+export type BowlingTableRow = PlayerInfo & BowlingSummary & { overs: string; matches: number }
 
 export async function resolveFilter(params: { season?: string | null; matchType?: string | null }) {
   await connectDB()
@@ -59,9 +61,9 @@ async function loadData(filter: StatsFilter) {
   const matchIds = docs.map((match) => match._id)
   const [batDocs, bowlDocs] = await Promise.all([
     BattingPerformance.find({ matchId: { $in: matchIds } }).select('matchId playerId runs balls fours sixes out dismissal')
-      .populate({ path: 'playerId', model: Player, select: 'fullName isActive' }).lean(),
+      .populate({ path: 'playerId', model: Player, select: 'fullName isActive role' }).lean(),
     BowlingPerformance.find({ matchId: { $in: matchIds } }).select('matchId playerId balls runs wickets wides noBalls maidens')
-      .populate({ path: 'playerId', model: Player, select: 'fullName isActive' }).lean(),
+      .populate({ path: 'playerId', model: Player, select: 'fullName isActive role' }).lean(),
   ])
   const batting = batDocs.map((row) => mapBatting(row, matchMap)).filter((row) => row !== null)
   const bowling = bowlDocs.map((row) => mapBowling(row, matchMap)).filter((row) => row !== null)
@@ -76,17 +78,17 @@ async function hideInactive(filter: StatsFilter) {
   if (!HIDE_INACTIVE_IN_CURRENT_SEASON || filter.seasonId === 'all') return false
   return filter.seasonId === (await getCurrentSeason())?.id
 }
-export async function getBattingTable(filter: StatsFilter): Promise<BattingTableRow[]> {
+export async function getBattingTable(filter: StatsFilter, options: { includeInactive?: boolean } = {}): Promise<BattingTableRow[]> {
   const data = await loadData(filter)
   const hide = await hideInactive(filter)
-  return [...battingByPlayer(data.batting)].map(([id, summary]) => ({ ...data.players.get(id)!, ...summary }))
-    .filter((row) => !hide || row.isActive).sort((a, b) => b.runs - a.runs || a.playerName.localeCompare(b.playerName))
+  return [...battingByPlayer(data.batting)].map(([id, summary]) => ({ ...data.players.get(id)!, matches: new Set([...data.batting, ...data.bowling].filter((row) => row.playerId === id).map((row) => row.matchId)).size, ...summary }))
+    .filter((row) => options.includeInactive || !hide || row.isActive).sort((a, b) => b.runs - a.runs || a.playerName.localeCompare(b.playerName))
 }
-export async function getBowlingTable(filter: StatsFilter): Promise<BowlingTableRow[]> {
+export async function getBowlingTable(filter: StatsFilter, options: { includeInactive?: boolean } = {}): Promise<BowlingTableRow[]> {
   const data = await loadData(filter)
   const hide = await hideInactive(filter)
-  return [...bowlingByPlayer(data.bowling)].map(([id, summary]) => ({ ...data.players.get(id)!, ...summary, overs: fmtOvers(summary.balls) }))
-    .filter((row) => !hide || row.isActive)
+  return [...bowlingByPlayer(data.bowling)].map(([id, summary]) => ({ ...data.players.get(id)!, matches: new Set([...data.batting, ...data.bowling].filter((row) => row.playerId === id).map((row) => row.matchId)).size, ...summary, overs: fmtOvers(summary.balls) }))
+    .filter((row) => options.includeInactive || !hide || row.isActive)
     .sort((a, b) => b.wickets - a.wickets || compareNullable(a.economy, b.economy) || a.playerName.localeCompare(b.playerName))
 }
 function overview(data: Awaited<ReturnType<typeof loadData>>) {
@@ -111,7 +113,7 @@ export async function getPlayerStats(playerId: string, filter: StatsFilter) {
   const recent = <T extends { date: Date; matchId: string }>(rows: T[]) => [...rows]
     .sort((a, b) => b.date.getTime() - a.date.getTime() || a.matchId.localeCompare(b.matchId)).slice(0, 10)
     .map((row) => ({ ...row, date: row.date.toISOString(), opponent: data.matchMap.get(row.matchId)!.opponent }))
-  return { batting: battingSummary(data.batting), bowling: bowlingSummary(data.bowling), byMatchType: breakdown(data),
+  return { matches: playedIds.size, runsByInnings: [...data.batting].filter((row) => row.dismissalType !== 'did not bat').sort((a, b) => a.date.getTime() - b.date.getTime()).slice(-12).map((row) => ({ date: row.date.toISOString(), runs: row.runs })), recentPerformances: [...data.matches].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5).map((match) => ({ matchId: match.matchId, date: match.date.toISOString(), opponent: match.opponent, bat: data.batting.find((row) => row.matchId === match.matchId && row.dismissalType !== 'did not bat') ?? null, bowl: data.bowling.find((row) => row.matchId === match.matchId) ?? null })), batting: battingSummary(data.batting), bowling: bowlingSummary(data.bowling), byMatchType: breakdown(data),
     recentBatting: recent(data.batting.filter((row) => row.dismissalType !== 'did not bat')), recentBowling: recent(data.bowling) }
 }
 export async function getRecords(filter: StatsFilter) {
@@ -123,6 +125,12 @@ export async function getRecords(filter: StatsFilter) {
     (match.season ? names.get(String(match.season)) : undefined) ?? seasonForDate(match.date).name]))
   const seasonOf = (matchId: string) => matchSeasons.get(matchId)!
   return {
+    ...dashboardTotals(data.batting, data.bowling),
+    matchInfo: Object.fromEntries(data.matches.map((match) => [match.matchId, { opponent: match.opponent, mora: match.moraInnings }])),
+    topRuns: [...battingByPlayer(data.batting)].sort((a, b) => b[1].runs - a[1].runs).slice(0, 5).map(([playerId, summary]) => ({ ...data.players.get(playerId)!, ...summary })),
+    topWickets: [...bowlingByPlayer(data.bowling)].sort((a, b) => b[1].wickets - a[1].wickets).slice(0, 5).map(([playerId, summary]) => ({ ...data.players.get(playerId)!, ...summary })),
+    milestones: recentMilestones(data.batting, data.bowling, data.matches, seasonOf),
+    playerNames: Object.fromEntries([...data.players].map(([id, player]) => [id, player.playerName])),
     highestScore: records.highestScore(data.batting), bestBowling: records.bestBowling(data.bowling),
     mostRunsInASeason: records.mostRunsInASeason(data.batting, seasonOf),
     mostWicketsInASeason: records.mostWicketsInASeason(data.bowling, seasonOf),

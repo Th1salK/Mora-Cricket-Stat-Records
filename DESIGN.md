@@ -5,7 +5,10 @@ Every UI change (by a person or an AI agent) must follow this file.
 
 - **Figma:** "Mora Cricket Stats new UI" — https://www.figma.com/design/nojZeIQzhhwyTojBm2QHGZ/Mora-Cricket-Stats-new-UI
 - **Built with:** Next.js 16 App Router · React 19 · Tailwind CSS 4 · **HeroUI v3** (`@heroui/react`, `@heroui/styles`)
-- **Last updated:** 27 Oct 2026 (after Phase 1: seasons + stats module)
+- **Last updated:** 28 Oct 2026 (UI revamp R1–R8)
+
+- **Design images:** every Figma screen is exported to `docs/design/screens/` (see §8 for which file belongs to which screen). Open the image before building or changing a screen.
+- **Agent rules:** `AGENTS.md` (repo root) holds the coding rules every agent must follow.
 
 ### How to use this file
 
@@ -210,7 +213,7 @@ Shared components live in `src/components/ui/` (generic) and `src/components/she
   - Overview: Dashboard `/`, Matches `/matches`, Players `/players`
   - Statistics: Batting `/stats/batting`, Bowling `/stats/bowling`, Records `/records`
   - Admin (signed in only): Import match `/admin/import`, Saved drafts `/admin/drafts`, Manage matches `/admin/matches`, Manage players `/admin/players`
-  - **Only show links to routes that exist.** Until a route is built, leave its item out (Records points to `/career` until Phase 3 creates `/records`).
+  - **All listed routes exist.** Records uses `/records`; `/career` permanently redirects and preserves the season.
 - **Nav item:** 40px, radius 12px, padding 10px 12px, icon 18 + label 14px. Idle: `--text-secondary`, hover `--surface-secondary`. Active: `--brand-soft` background, `--foreground` text, icon `--brand-hover`, `aria-current="page"`. Active matching: `/` exact; others match the path or any sub-path.
 - **Footer** (bottom): signed out → card "Team admin?" / "Sign in to add matches and update scorecards." / primary "Admin login" with lock icon. Signed in → row with avatar "AD", "Team Admin", "Signed in" (win green) and a logout icon button.
 
@@ -249,7 +252,7 @@ Figma frame names are in brackets. "Data" names the function in `src/lib/queries
 - Back link "Back to matches" + Share button (copies URL).
 - **Match header** panel (radius 20px, deep-navy gradient from Figma): format badge, date, venue, toss line · Mora (avatar, name, score Stat L, overs + run rate) vs Opposition (same, right-aligned) · result strip ("Mora CC won by 16 runs").
 - Tabs: "Mora CC innings" · "<Opponent> innings" · "Match info".
-  - **Mora innings:** Batting table (Batter + dismissal line, R, B, 4s, 6s, SR; not-out names in teal with "not out"), extras line ("Extras 19 (w 11, nb 4, lb 4)") and total; then **Did not bat** list.
+  - **Mora innings:** Batting table (Batter + dismissal line, R, B, 4s, 6s, SR; not-out names in teal with "not out"), extras line ("Extras 19 (w 11, nb 4, lb 4)") and total. Order rows by batting position when known, otherwise as stored. There is no "Did not bat" list (those players are not saved).
   - **Opponent innings:** their total, extras and **Mora's bowling** (Bowler, O, M, R, W, Econ, Wd, NB). We do **not** store opposition batters — show a one-line note instead of a table.
 - Side column: **Match highlights** (Top scorer, Best bowling, plus one more stat we can compute, e.g. Most sixes) and **Match info** (Format, Venue, Toss, Source: imported/manual).
 - **Older match state** [State / Match Detail — older match, stats only]: header shows "Score not recorded" for both sides, no result strip; an info banner "Added before the scorecard importer…" with an admin-only "Re-import" link; batting shows only "out"/"not out"; maidens show "–".
@@ -310,16 +313,40 @@ Matches the real importer flow (`ImportClient`, `DraftReview`, `SavedDraftClient
 5. **Published** [Import — 4 Published]: success, scores summary, counts, names learned, links.
 - Mobile [Mobile / Admin · Import — Upload / Review]: stacked cards; review uses one card per batter with the picker; bottom action bar.
 
-### 8.11 Admin — Saved drafts `/admin/drafts` [Saved drafts (new page)] — not built yet
+### 8.11 Admin — Saved drafts `/admin/drafts` [Saved drafts (new page)]
 Table: Match (vs opponent + date/venue), Format, Saved (time + AI import/Manual), Status (dot + "1 blocking warning" / "3 names to check" / "Ready to publish"), Expires (amber when ≤ 3 days), Open + delete. Filter chips All / Ready / Needs fixes / Manual. Note that drafts expire after 30 days and screenshots are never saved.
 
-### 8.12 Admin — Manage matches `/admin/matches` [Manage Matches v2 (matches code)] — not built yet
+### 8.12 Admin — Manage matches `/admin/matches` [Manage Matches v2 (matches code)]
 Use **v2**, not the original frame: header actions "Saved drafts · N" + "Import match"; filters (search, format, scorecard: full/stats only, season); table: checkbox, Date, Opponent, Format, Venue, Result ("–" if none), **Scorecard** (Full scorecard / Stats only), **Source** (Import / "Re-import" link for old matches), view/edit/delete. Bulk delete only. Delete uses the "Delete match" dialog and removes the match's performances too.
 
-### 8.13 Admin — Manage players `/admin/players` [Desktop / Admin · Manage Players] — not built yet
+### 8.13 Admin — Manage players `/admin/players` [Desktop / Admin · Manage Players]
 Table with Player, Role, Bat, Bowl, Active switch, edit/more. Edit panel (right drawer): Full name, Short name, Role, Batting style, Bowling style, **Aliases** (add/remove chips — needed to fix name matching), Active switch. Leave out photo, jersey number and squad tag until the data model has them (§10).
 
 ---
+
+### 8.14 Screen image index (`docs/design/screens/`)
+
+| Screen | Desktop | Mobile |
+| --- | --- | --- |
+| Dashboard | `desktop-dashboard.png` | `mobile-dashboard.png` |
+| Matches | `desktop-matches.png` | `mobile-matches.png` |
+| Match detail | `desktop-match-detail.png` (+ `state-match-detail-old-match.png`) | `mobile-match-detail.png` |
+| Players | `desktop-players.png` | `mobile-players.png` |
+| Player profile | `desktop-player-profile.png` | `mobile-player-profile.png` |
+| Batting stats | `desktop-batting-stats.png` | `mobile-batting-stats.png` |
+| Bowling stats | `desktop-bowling-stats.png` | (same pattern as batting) |
+| Records | `desktop-records.png` | `mobile-records.png` |
+| Admin login | `desktop-admin-login.png` | `mobile-admin-login.png` |
+| Import 1–4 | `admin-import-1-upload.png`, `-2-reading`, `-3-review`, `-4-published` | `mobile-admin-import-upload.png`, `mobile-admin-import-review.png` |
+| Dialogs | `dialog-confirm-publish.png`, `dialog-possible-duplicate.png`, `dialog-delete-match.png` | — |
+| Saved drafts | `desktop-admin-saved-drafts.png` | — |
+| Manage matches | `desktop-admin-manage-matches.png` | — |
+| Manage players | `desktop-admin-manage-players.png` | — |
+| States | `state-season-selector-open.png`, `state-stats-edge-cases.png` | — |
+
+The images contain sample data (e.g. shirt numbers, player of the match). §10 always wins over what an image shows.
+
+**Images and logo** (exported by hand from the Figma `_Assets` frame): `public/brand/mora-logo.png`, `public/images/team-huddle.jpg` (dashboard hero), `public/images/team-celebration.jpg` (login), `public/images/player-photo.jpg` (not used until players have photos). If a file is missing, use a navy gradient (`--brand-deep` → `--background`) instead.
 
 ## 9. Data display rules
 
@@ -333,6 +360,8 @@ Table with Player, Role, Bat, Bowl, Active switch, edit/more. Edit panel (right 
 | High score | asterisk if not out | "72*" |
 | Score | runs/wickets + overs | "214/8 (50.0)"; "198/10" = all out |
 | Batter line in scorecards | runs (balls) | "72 (88)" |
+| Dismissal text | from `dismissal {type, fielder, bowler}`: bowled "b B", caught "c F b B" ("c & b B" when F = B), lbw "lbw b B", stumped "st F b B", run out "run out (F)", hit wicket "hit wicket b B", not out / retired hurt / retired out as words. No dismissal stored (old match) → "out" or "not out" from `out` | "c Rahman b Fazil" |
+| Team name | "Mora CC" in match contexts; opponent from `match.opponent` | |
 | Dates | long: "Sat, 28 Mar 2026"; table: "28 Mar 2026"; compact: "28 Mar" | Always Asia/Colombo, from the UTC match date |
 | Large numbers | thousands separator | "1,899" |
 | Percentages | whole number + % | "67%" |
@@ -362,7 +391,6 @@ Do not build these until the data model has them. Hide the element or use the li
 | Import CSV | Not a feature | Import match (screenshots) |
 | Forgot password, keep me signed in | Not built | Leave out |
 | Top-bar search, notifications bell | Not built | Leave out |
-| Export CSV | Not built yet | Optional, client-side from the visible table |
 
 If any of these become real (new optional fields), update this table first.
 
@@ -398,7 +426,7 @@ If any of these become real (new optional fields), update this table first.
 - Generic UI: `src/components/ui/`. Shell: `src/components/shell/`. Pure UI helpers (nav, format colours, `cn`): `src/lib/ui/` with tests.
 - Number formatting: always use `src/lib/stats/format.ts` (`fmtNumber`, `fmtOvers`, `fmtFigures`, `fmtHighScore`) — never format stats inline.
 - Data for pages: `src/lib/queries/stats.ts`; pages are server components; only interactive parts are client components.
-- Legacy classes (`.glass`, `.glass-blue`, `.glass-hover`, `.glass-select`, `.badge-*`) exist only until Phase 3 replaces the pages. Don't use them in new code.
+- Pages use shared components and theme tokens. The legacy glass/badge classes have been removed.
 - A dev-only `/design` page shows all shared components; update it when you add one.
 
 ---
@@ -408,3 +436,5 @@ If any of these become real (new optional fields), update this table first.
 | Date | Change |
 | --- | --- |
 | 27 Oct 2026 | First version, written from the Figma file after Phase 1. |
+| 27 Oct 2026 | Added screen image index (§8.14), dismissal/team-name rules, removed "Did not bat" from match detail. |
+| 28 Oct 2026 | R1–R8: public screens, scorecards, CSV exports, Records, admin drafts and management, re-import, and shared loading/error states. |

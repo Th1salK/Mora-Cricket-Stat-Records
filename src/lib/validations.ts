@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { MATCH_TYPES } from "@/lib/constants"
 import { DISMISSAL_TYPES } from "@/lib/import/parse"
+import { normalizeAliases } from "@/lib/ui/aliases"
 
 const VENUES = ["Home", "Away"] as const
 const BATTING_STYLES = ["Right Hand Bat", "Left Hand Bat"] as const
@@ -62,7 +63,7 @@ export const matchUpdateSchema = matchSchema
 export const playerSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required").max(100),
   shortName: z.string().trim().min(1, "Short name is required").max(20),
-  aliases: z.array(z.string().trim().max(100)).optional(),
+  aliases: z.array(z.string().trim().max(100)).max(20).transform(normalizeAliases).optional(),
   battingStyle: z.enum(BATTING_STYLES).optional(),
   bowlingStyle: z.string().trim().max(50).nullable().optional(),
   role: z.enum(ROLES, { message: "Invalid role" }),

@@ -42,3 +42,16 @@ export async function getCurrentSeason(): Promise<{ id: string; name: string } |
   }
   return season ? { id: String(season._id), name: season.name } : null
 }
+
+export async function listSeasonsWithCounts() {
+  await connectDB()
+  const [seasons, counts] = await Promise.all([
+    listSeasons(),
+    Match.aggregate<{ _id: mongoose.Types.ObjectId; matchCount: number }>([
+      { $match: { season: { $exists: true, $ne: null } } },
+      { $group: { _id: '$season', matchCount: { $sum: 1 } } },
+    ]),
+  ])
+  const byId = new Map(counts.map((row) => [String(row._id), row.matchCount]))
+  return seasons.map((season) => ({ ...season, matchCount: byId.get(season.id) ?? 0 }))
+}

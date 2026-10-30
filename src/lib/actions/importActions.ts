@@ -4,6 +4,8 @@ import mongoose from "mongoose"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentUser } from "@/lib/auth"
+import { headers } from "next/headers"
+import { checkApiRateLimit } from "@/lib/rateLimit"
 import { connectDB } from "@/lib/mongodb"
 import { ensureSeasonForDate } from "@/lib/seasonsServer"
 import BattingPerformance from "@/models/BattingPerformance"
@@ -52,6 +54,17 @@ export type SaveDraftResult =
 
 function firstIssue(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Invalid input"
+}
+
+export async function deleteDraftAction(id: string): Promise<{ ok: boolean; error?: string }> {
+  if (!(await getCurrentUser())) return { ok: false, error: "Not authorised" }
+  if (!mongoose.isValidObjectId(id)) return { ok: false, error: "Draft not found" }
+  if (!(await checkApiRateLimit(new Request("http://localhost", { headers: await headers() })))) return { ok: false, error: "Too many requests. Try again later." }
+  await connectDB()
+  const deleted = await ImportDraft.deleteOne({ _id: id, status: "draft" })
+  if (!deleted.deletedCount) return { ok: false, error: "Draft not found or already published" }
+  revalidatePath("/admin/drafts")
+  return { ok: true }
 }
 
 export async function extractAction(
@@ -193,13 +206,20 @@ function escapeRegExp(value: string): string {
 
 export async function publishAction(
   draftId: string,
-  options?: { force?: boolean }
+  options?: { force?: boolean; replaceMatchId?: string }
 ): Promise<PublishActionResult> {
   const user = await getCurrentUser()
   if (!user) return { ok: false, error: "Not authorised" }
 
   if (!mongoose.isValidObjectId(draftId)) {
     return { ok: false, code: "not-found", error: "Draft not found" }
+  }
+
+  if (options?.replaceMatchId && !mongoose.isValidObjectId(options.replaceMatchId)) {
+    return { ok: false, error: "Invalid match to replace" }
+  }
+  if (options?.replaceMatchId && !(await checkApiRateLimit(new Request("http://localhost", { headers: await headers() })))) {
+    return { ok: false, error: "Too many requests. Try again later." }
   }
 
   await connectDB()
@@ -293,6 +313,7 @@ export async function publishAction(
     const existing = await Match.findOne({
       opponent: new RegExp(`^${escapeRegExp(parsedDetails.data.opponent)}$`, "i"),
       date: { $gte: dayStart, $lt: dayEnd },
+      ...(options?.replaceMatchId ? { _id: { $ne: options.replaceMatchId } } : {}),
     })
       .select("_id")
       .lean()
@@ -314,6 +335,13 @@ export async function publishAction(
     const session = await mongoose.startSession()
     try {
       await session.withTransaction(async () => {
+        if (options?.replaceMatchId) {
+          const old = await Match.findById(options.replaceMatchId).session(session)
+          if (!old) throw new Error("The match to replace no longer exists")
+          await BattingPerformance.deleteMany({ matchId: old._id }, { session })
+          await BowlingPerformance.deleteMany({ matchId: old._id }, { session })
+          await Match.deleteOne({ _id: old._id }, { session })
+        }
         const [match] = await Match.create(
           [{ ...payload.match, date: new Date(payload.match.date), season: seasonId }],
           { session }

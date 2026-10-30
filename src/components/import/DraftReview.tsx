@@ -1,21 +1,25 @@
 "use client"
 
 import Link from "next/link"
+import { OptionalMatchDetails } from "@/components/import/OptionalMatchDetails"
 import { useState } from "react"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
+import { Stepper } from "@/components/ui/Stepper"
+import { Banner } from "@/components/ui/Banner"
+import { DraftInningsEditor } from "@/components/import/DraftInningsEditor"
 import { MATCH_TYPES } from "@/lib/constants"
 import { buildPublishPayload, type PublishProblem } from "@/lib/import/publish"
 import {
   canPublish,
   draftWarnings,
-  setPlayer,
   swapSides,
   type Draft,
   type MatchDetails,
 } from "@/lib/import/draft"
-import type { NameMatch, PlayerLite } from "@/lib/import/matchPlayers"
+import type { PlayerLite } from "@/lib/import/matchPlayers"
 
 const inputClass =
-  "w-full rounded border border-blue-500/30 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-blue-400"
+  "ui-field"
 
 type DraftReviewProps = {
   draft: Draft
@@ -29,67 +33,11 @@ type DraftReviewProps = {
   onPublish: () => Promise<void> | void
   publishing: boolean
   problems?: PublishProblem[] | null
-  duplicate?: { message: string; onPublishAnyway: () => void } | null
+  duplicate?: { message: string; onPublishAnyway: () => void; onDismiss?: () => void } | null
   error?: string | null
   notice?: string | null
   backHref?: string
   onBack?: () => void
-}
-
-function playerLabel(player: PlayerLite): string {
-  return player.shortName ? `${player.fullName} (${player.shortName})` : player.fullName
-}
-
-function MatchChip({ match }: { match: NameMatch | null }) {
-  if (!match) {
-    return <span className="text-xs text-slate-500">opponent player</span>
-  }
-
-  const style =
-    match.status === "exact"
-      ? "text-emerald-400"
-      : match.status === "confirm"
-        ? "text-amber-400"
-        : "text-red-400"
-  const label =
-    match.status === "exact" ? "matched" : match.status === "confirm" ? "check" : "not linked"
-
-  return (
-    <span className={`text-xs ${style}`} title={match.reason}>
-      {label} · {match.reason}
-    </span>
-  )
-}
-
-function PlayerPicker({
-  row,
-  players,
-  onChange,
-}: {
-  row: { match: NameMatch | null; playerId: string | null; name: string }
-  players: PlayerLite[]
-  onChange: (playerId: string | null) => void
-}) {
-  return (
-    <div className="min-w-44">
-      <select
-        aria-label={`Player for ${row.name}`}
-        className="glass-select w-full py-1 text-xs"
-        value={row.playerId ?? ""}
-        onChange={(event) => onChange(event.target.value || null)}
-      >
-        <option value="">— pick player —</option>
-        {players.map((player) => (
-          <option key={player.id} value={player.id}>
-            {playerLabel(player)}
-          </option>
-        ))}
-      </select>
-      <div className="mt-1">
-        <MatchChip match={row.match} />
-      </div>
-    </div>
-  )
 }
 
 export default function DraftReview({
@@ -125,16 +73,17 @@ export default function DraftReview({
   const busy = saving || publishing
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-[calc(144px+env(safe-area-inset-bottom))] md:pb-0">
+      <Stepper step={3} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-yellow-400">Review match</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="font-display text-4xl uppercase md:text-[52px]">Review match</h1>
+          <p className="text-sm text-text-secondary">
             Check every Mora player is linked before publishing.
           </p>
         </div>
         {backHref ? (
-          <Link href={backHref} className="text-sm text-blue-400 hover:text-blue-300">
+          <Link href={backHref} className="inline-flex min-h-10 items-center text-sm text-brand-hover hover:text-brand-hover">
             Back to import
           </Link>
         ) : null}
@@ -142,7 +91,7 @@ export default function DraftReview({
           <button
             type="button"
             onClick={onBack}
-            className="text-sm text-blue-400 hover:text-blue-300"
+            className="min-h-10 text-sm text-brand-hover hover:text-brand-hover"
           >
             Start over
           </button>
@@ -150,18 +99,16 @@ export default function DraftReview({
       </div>
 
       {notice ? (
-        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-200">
-          {notice}
-        </div>
+        <Banner>{notice}</Banner>
       ) : null}
 
-      <section className="glass p-4">
-        <h2 className="mb-3 text-sm font-semibold text-white">Match details</h2>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]"><div className="min-w-0 space-y-5">      <section className="rounded-[14px] border border-separator bg-surface p-4">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Match details</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="block text-xs text-slate-400">
+          <label className="block text-xs text-text-secondary">
             Match type
             <select
-              className={`${inputClass} glass-select mt-1`}
+              className={`${inputClass} ui-field mt-1`}
               value={details.matchType}
               onChange={(event) =>
                 onDetailsChange({ ...details, matchType: event.target.value as MatchDetails["matchType"] })
@@ -175,7 +122,7 @@ export default function DraftReview({
             </select>
           </label>
 
-          <label className="block text-xs text-slate-400">
+          <label className="block text-xs text-text-secondary">
             Date
             <input
               type="date"
@@ -185,7 +132,7 @@ export default function DraftReview({
             />
           </label>
 
-          <label className="block text-xs text-slate-400">
+          <label className="block text-xs text-text-secondary">
             Opponent
             <input
               className={`${inputClass} mt-1`}
@@ -194,10 +141,10 @@ export default function DraftReview({
             />
           </label>
 
-          <label className="block text-xs text-slate-400">
+          <label className="block text-xs text-text-secondary">
             Venue
             <select
-              className={`${inputClass} glass-select mt-1`}
+              className={`${inputClass} ui-field mt-1`}
               value={details.venue}
               onChange={(event) =>
                 onDetailsChange({ ...details, venue: event.target.value as MatchDetails["venue"] })
@@ -208,7 +155,7 @@ export default function DraftReview({
             </select>
           </label>
 
-          <label className="block text-xs text-slate-400">
+          <label className="block text-xs text-text-secondary">
             Overs
             <input
               type="number"
@@ -222,7 +169,7 @@ export default function DraftReview({
             />
           </label>
 
-          <label className="block text-xs text-slate-400">
+          <label className="block text-xs text-text-secondary">
             Ground name (optional)
             <input
               className={`${inputClass} mt-1`}
@@ -233,22 +180,25 @@ export default function DraftReview({
             />
           </label>
         </div>
+        <OptionalMatchDetails details={details} onChange={onDetailsChange} />
       </section>
 
-      <section className="space-y-3">
+      <DraftInningsEditor draft={draft} players={players} onChange={onDraftChange} />
+
+</div><aside className="space-y-5">      <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-white">Warnings</h2>
+          <h2 className="text-sm font-semibold text-foreground">Warnings</h2>
           <button
             type="button"
             onClick={() => onDraftChange(swapSides(draft, players))}
-            className="rounded border border-blue-500/30 px-3 py-1 text-xs text-blue-300 hover:bg-blue-500/10"
+            className="min-h-10 rounded-[12px] border border-border px-3 py-2 text-xs text-brand-hover hover:bg-accent/10"
           >
             Swap sides
           </button>
         </div>
 
         {warnings.length === 0 ? (
-          <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <p className="rounded-lg border border-win/35 bg-accent/10 px-3 py-2 text-sm text-win">
             All checks passed.
           </p>
         ) : (
@@ -258,8 +208,8 @@ export default function DraftReview({
                 key={`${warning.code}-${warning.innings}-${index}`}
                 className={`rounded px-3 py-2 text-sm ${
                   warning.blocking
-                    ? "border border-red-500/30 bg-red-500/10 text-red-200"
-                    : "border border-amber-500/30 bg-amber-500/10 text-amber-200"
+                    ? "border border-danger/35 bg-danger/10 text-danger"
+                    : "border border-gold/35 bg-gold/10 text-gold"
                 }`}
               >
                 <span className="mr-2 text-xs opacity-70">Innings {warning.innings}</span>
@@ -273,129 +223,10 @@ export default function DraftReview({
         )}
       </section>
 
-      {draft.innings.map((inn, inningsIndex) => {
-        const battingEditable = inn.side === "mora"
-        const bowlingEditable = inn.side === "opposition"
-
-        return (
-          <section key={inningsIndex} className="glass p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-semibold text-white">
-                Innings {inningsIndex + 1}
-                <span className="ml-2 text-sm font-normal text-slate-400">{inn.battingTeam}</span>
-              </h2>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs ${
-                  inn.side === "mora"
-                    ? "bg-yellow-400/15 text-yellow-300"
-                    : "bg-slate-400/15 text-slate-300"
-                }`}
-              >
-                {inn.side === "mora" ? "Mora batting" : "Opposition batting"}
-              </span>
-            </div>
-
-            <p className="mb-2 text-xs text-slate-400">
-              {inn.total.runs ?? "?"}/{inn.total.wickets ?? "?"} in {inn.total.overs} overs
-            </p>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
-                <thead className="text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="py-1 pr-2">Batter</th>
-                    <th className="py-1 pr-2">How out</th>
-                    <th className="py-1 pr-2">R</th>
-                    <th className="py-1 pr-2">B</th>
-                    <th className="py-1 pr-2">4s</th>
-                    <th className="py-1 pr-2">6s</th>
-                    {battingEditable ? <th className="py-1">Player</th> : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {inn.batting.map((row, rowIndex) => (
-                    <tr key={`${row.name}-${rowIndex}`} className="border-t border-white/5">
-                      <td className="py-2 pr-2 text-white">{row.name}</td>
-                      <td className="py-2 pr-2 text-slate-300">{row.howOut}</td>
-                      <td className="py-2 pr-2">{row.runs ?? "—"}</td>
-                      <td className="py-2 pr-2">{row.balls ?? "—"}</td>
-                      <td className="py-2 pr-2">{row.fours ?? "—"}</td>
-                      <td className="py-2 pr-2">{row.sixes ?? "—"}</td>
-                      {battingEditable ? (
-                        <td className="py-2">
-                          <PlayerPicker
-                            row={row}
-                            players={players}
-                            onChange={(playerId) =>
-                              onDraftChange(
-                                setPlayer(draft, inningsIndex, "batting", rowIndex, playerId)
-                              )
-                            }
-                          />
-                        </td>
-                      ) : null}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {inn.didNotBat.length > 0 ? (
-              <p className="mt-2 text-xs text-slate-400">
-                Did not bat: {inn.didNotBat.join(", ")}
-              </p>
-            ) : null}
-
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
-                <thead className="text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="py-1 pr-2">Bowler</th>
-                    <th className="py-1 pr-2">O</th>
-                    <th className="py-1 pr-2">M</th>
-                    <th className="py-1 pr-2">R</th>
-                    <th className="py-1 pr-2">W</th>
-                    <th className="py-1 pr-2">Wd</th>
-                    <th className="py-1 pr-2">Nb</th>
-                    {bowlingEditable ? <th className="py-1">Player</th> : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {inn.bowling.map((row, rowIndex) => (
-                    <tr key={`${row.name}-${rowIndex}`} className="border-t border-white/5">
-                      <td className="py-2 pr-2 text-white">{row.name}</td>
-                      <td className="py-2 pr-2">{row.overs}</td>
-                      <td className="py-2 pr-2">{row.maidens ?? "—"}</td>
-                      <td className="py-2 pr-2">{row.runs ?? "—"}</td>
-                      <td className="py-2 pr-2">{row.wickets ?? "—"}</td>
-                      <td className="py-2 pr-2">{row.wides ?? "—"}</td>
-                      <td className="py-2 pr-2">{row.noBalls ?? "—"}</td>
-                      {bowlingEditable ? (
-                        <td className="py-2">
-                          <PlayerPicker
-                            row={row}
-                            players={players}
-                            onChange={(playerId) =>
-                              onDraftChange(
-                                setPlayer(draft, inningsIndex, "bowling", rowIndex, playerId)
-                              )
-                            }
-                          />
-                        </td>
-                      ) : null}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )
-      })}
-
       {draft.unreadable.length > 0 ? (
-        <section className="glass p-4">
-          <h2 className="mb-2 text-sm font-semibold text-white">The AI could not read</h2>
-          <ul className="list-inside list-disc text-sm text-amber-200">
+        <section className="rounded-[14px] border border-separator bg-surface p-4">
+          <h2 className="mb-2 text-sm font-semibold text-foreground">The AI could not read</h2>
+          <ul className="list-inside list-disc text-sm text-gold">
             {draft.unreadable.map((item, index) => (
               <li key={index}>{item}</li>
             ))}
@@ -404,83 +235,25 @@ export default function DraftReview({
       ) : null}
 
       {error ? (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        <p role="alert" className="rounded-lg border border-danger/35 bg-danger/10 px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}
 
       {problems && problems.length > 0 ? (
-        <ul className="space-y-1 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        <ul role="alert" className="space-y-1 rounded-lg border border-danger/35 bg-danger/10 px-3 py-2 text-sm text-danger">
           {problems.map((problem, index) => (
             <li key={`${problem.message}-${index}`}>{problem.message}</li>
           ))}
         </ul>
       ) : null}
 
-      {duplicate ? (
-        <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-          <p>{duplicate.message}</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/matches" className="text-blue-300 hover:text-blue-200">
-              View matches
-            </Link>
-            <button
-              type="button"
-              onClick={duplicate.onPublishAnyway}
-              disabled={busy}
-              className="rounded border border-amber-400/40 px-3 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-500/10 disabled:opacity-50"
-            >
-              Publish anyway
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {confirming && ready ? (
-        <div className="glass-blue space-y-3 p-4">
-          <p className="text-sm text-blue-100">
-            Mora vs {details.opponent}, {details.date}, {details.matchType}: {battingCount}{" "}
-            batting and {bowlingCount} bowling records will be saved
-          </p>
-
-          {nonBlocking.length > 0 ? (
-            <ul className="list-inside list-disc text-xs text-amber-200">
-              {nonBlocking.map((problem, index) => (
-                <li key={`${problem.message}-${index}`}>{problem.message}</li>
-              ))}
-            </ul>
-          ) : null}
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              disabled={publishing}
-              className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-white/5 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                await onPublish()
-                setConfirming(false)
-              }}
-              disabled={busy}
-              className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
-            >
-              {publishing ? "Publishing…" : "Confirm publish"}
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-3">
+      <div role="group" aria-label="Save or publish match" className="fixed inset-x-0 bottom-0 z-20 flex flex-wrap items-center gap-3 border-t border-separator bg-surface p-4 pb-[calc(16px+env(safe-area-inset-bottom))] md:static md:rounded-[14px] md:border md:pb-4">
         <button
           type="button"
           onClick={onSave}
           disabled={busy}
-          className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+          className="min-h-10 flex-1 rounded-[12px] bg-default px-4 py-2 text-sm font-semibold text-default-foreground disabled:opacity-50"
         >
           {saving ? "Saving…" : saveLabel}
         </button>
@@ -490,12 +263,12 @@ export default function DraftReview({
           onClick={() => setConfirming(true)}
           disabled={!ready || busy}
           title={ready ? undefined : "Fix the blocking warnings first"}
-          className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-10 flex-1 rounded-[12px] bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
         >
           Publish match
         </button>
 
-        <span className={`text-xs ${ready ? "text-emerald-400" : "text-red-300"}`}>
+        <span role="status" className={`w-full text-xs ${ready ? "text-win" : "text-danger"}`}>
           {ready
             ? "No blocking warnings."
             : `${blockingMessages.length} blocking warning${
@@ -505,12 +278,15 @@ export default function DraftReview({
       </div>
 
       {!ready && blockingMessages.length > 0 ? (
-        <ul className="list-inside list-disc space-y-1 text-xs text-red-300">
+        <ul className="list-inside list-disc space-y-1 text-xs text-danger">
           {Array.from(new Set(blockingMessages)).map((message) => (
             <li key={message}>{message}</li>
           ))}
         </ul>
       ) : null}
+</aside></div>      <ConfirmDialog open={!!duplicate} title="Possible duplicate match" confirmLabel="Publish anyway" busy={busy} onClose={() => duplicate?.onDismiss?.()} onConfirm={() => duplicate?.onPublishAnyway()}><p>{duplicate?.message}</p><p className="mt-3">If this is a second game on the same day, publish anyway.</p><Link href="/matches" className="mt-3 inline-block text-brand-hover">View matches</Link></ConfirmDialog>
+      <ConfirmDialog open={confirming && ready} title="Publish this match?" confirmLabel="Confirm publish" busy={busy} onClose={() => setConfirming(false)} onConfirm={async () => { await onPublish(); setConfirming(false) }}><p>Mora vs {details.opponent}, {details.date}, {details.matchType}: {battingCount} batting and {bowlingCount} bowling records will be saved.</p>{nonBlocking.length > 0 && <ul className="mt-4 list-inside list-disc rounded-[12px] bg-surface-secondary p-3 text-gold">{nonBlocking.map((problem, i) => <li key={i}>{problem.message}</li>)}</ul>}</ConfirmDialog>
+
     </div>
   )
 }

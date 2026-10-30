@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@google/genai": "^2.30.0",
+    "@heroui/react": "^3.2.6",
+    "@heroui/styles": "^3.2.6",
     "bcryptjs": "^3.0.3",
     "mongodb": "^7.1.0",
     "mongoose": "^9.1.5",

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { PublishedSummary } from "@/components/import/PublishedSummary"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
@@ -16,10 +17,11 @@ import {
   saveDraftAction,
   type PublishActionResult,
 } from "@/lib/actions/importActions"
-import DraftReview from "./DraftReview"
+import DraftReview from "@/components/import/DraftReview"
 
 type SavedDraftClientProps = {
   draftId: string
+  replaceMatchId?: string
   initialDetails: unknown
   initialDraft: unknown
   players: PlayerLite[]
@@ -27,6 +29,7 @@ type SavedDraftClientProps = {
 
 export default function SavedDraftClient({
   draftId,
+  replaceMatchId,
   initialDetails,
   initialDraft,
   players,
@@ -50,13 +53,13 @@ export default function SavedDraftClient({
 
   if (!draft || !details) {
     return (
-      <div className="glass space-y-3 p-6">
-        <h1 className="text-xl font-bold text-yellow-400">Draft not ready</h1>
-        <p className="text-sm text-slate-400">
+      <div className="rounded-[14px] border border-separator bg-surface space-y-3 p-6">
+        <h1 className="text-xl font-bold text-foreground">Draft not ready</h1>
+        <p className="text-sm text-text-secondary">
           This draft has no reviewed stats yet. Open the import page to read the screenshots
           again.
         </p>
-        <Link href="/admin/import" className="text-sm text-blue-400 hover:text-blue-300">
+        <Link href="/admin/import" className="text-sm text-brand-hover hover:text-brand-hover">
           Back to import
         </Link>
       </div>
@@ -112,7 +115,7 @@ export default function SavedDraftClient({
         return
       }
 
-      const result = await publishAction(draftId)
+      const result = await publishAction(draftId, { replaceMatchId })
       if (result.ok) {
         setPublishedMatchId(result.matchId)
         return
@@ -131,7 +134,7 @@ export default function SavedDraftClient({
     setError(null)
     setPublishProblems(null)
     try {
-      const result = await publishAction(draftId, { force: true })
+      const result = await publishAction(draftId, { force: true, replaceMatchId })
       if (result.ok) {
         setPublishedMatchId(result.matchId)
         return
@@ -145,33 +148,8 @@ export default function SavedDraftClient({
     }
   }
 
-  if (publishedMatchId) {
-    return (
-      <div className="glass space-y-4 p-6">
-        <h1 className="text-2xl font-bold text-emerald-400">Match published</h1>
-        <p className="text-sm text-slate-400">
-          The match, performances and player aliases are now saved.
-        </p>
-        <div className="flex flex-wrap gap-4 text-sm">
-          <Link href="/matches" className="text-blue-400 hover:text-blue-300">
-            Matches
-          </Link>
-          <Link href="/stats/batting" className="text-blue-400 hover:text-blue-300">
-            Batting stats
-          </Link>
-          <Link href="/stats/bowling" className="text-blue-400 hover:text-blue-300">
-            Bowling stats
-          </Link>
-        </div>
-        <Link
-          href="/admin/import"
-          className="inline-block rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black"
-        >
-          Import another match
-        </Link>
-      </div>
-    )
-  }
+  if (publishedMatchId && draft && details) return <PublishedSummary matchId={publishedMatchId} draft={draft} details={details} players={players} />
+
 
   return (
     <DraftReview
@@ -188,7 +166,7 @@ export default function SavedDraftClient({
       problems={publishProblems}
       duplicate={
         duplicate
-          ? { message: duplicate.message, onPublishAnyway: publishAnyway }
+          ? { message: duplicate.message, onPublishAnyway: publishAnyway, onDismiss: () => setDuplicate(null) }
           : null
       }
       error={error}

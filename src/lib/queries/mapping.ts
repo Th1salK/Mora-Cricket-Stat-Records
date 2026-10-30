@@ -11,12 +11,12 @@ export type PerformanceDocument = {
   matchId: Id; playerId: unknown; runs?: number; balls?: number; fours?: number; sixes?: number
   out?: boolean; dismissal?: { type?: string }; wickets?: number; wides?: number; noBalls?: number; maidens?: number
 }
-export type PlayerInfo = { playerId: string; playerName: string; isActive: boolean }
+export type PlayerInfo = { playerId: string; playerName: string; isActive: boolean; role?: import('@/lib/ui/formatColors').PlayerRole }
 
 export function populatedPlayer(value: unknown): PlayerInfo | null {
   if (!value || typeof value !== 'object' || !('_id' in value) || !('fullName' in value)) return null
-  const player = value as { _id: Id; fullName: string; isActive?: boolean }
-  return { playerId: String(player._id), playerName: player.fullName, isActive: player.isActive !== false }
+  const player = value as { _id: Id; fullName: string; isActive?: boolean; role?: PlayerInfo['role'] }
+  return { playerId: String(player._id), playerName: player.fullName, isActive: player.isActive !== false, ...(player.role ? { role: player.role } : {}) }
 }
 export function mapMatch(match: MatchDocument): MatchRow {
   function innings(team: string) {
