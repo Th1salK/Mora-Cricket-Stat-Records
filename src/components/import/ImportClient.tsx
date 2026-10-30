@@ -438,7 +438,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
             addFiles(event.target.files)
             event.target.value = ""
           }}
-          className="block min-h-10 w-full text-sm text-text-secondary file:mr-3 file:min-h-10 file:rounded-[12px] file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:text-accent-foreground"
+          className="block min-h-10 w-full text-sm text-text-secondary file:mr-3 file:min-h-10 file:rounded-[12px] file:border-0 file:bg-brand-pressed file:px-3 file:py-2 file:text-sm file:text-accent-foreground"
         />
 
         {screenshots.length > 0 ? (
@@ -477,7 +477,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
           type="button"
           onClick={extract}
           disabled={busy}
-          className="min-h-10 rounded-[12px] bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+          className="min-h-10 rounded-[12px] bg-brand-pressed px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
         >
           {busy ? "Reading screenshots…" : "Read scorecard"}
         </button>

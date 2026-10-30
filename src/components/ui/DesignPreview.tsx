@@ -10,6 +10,8 @@ import { Stepper } from '@/components/ui/Stepper'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EditDrawer } from '@/components/ui/EditDrawer'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import PageError from '@/components/ui/PageError'
+import { ImportReviewPreview } from '@/components/ui/ImportReviewPreview'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { PlayerCard } from '@/components/ui/PlayerCard'
 import { MatchList } from '@/components/ui/MatchList'
@@ -52,10 +54,12 @@ const typeScale = [
 export function DesignPreview() {
   const [dialog, setDialog] = useState(false)
   const [drawer, setDrawer] = useState(false)
+  const [review, setReview] = useState(false)
   const [message, setMessage] = useState('Preview actions do not change team data.')
+  if (review) return <ImportReviewPreview onBack={() => setReview(false)} />
   return <div className="space-y-4 md:space-y-5">
     <PageHeader eyebrow="Development only" title="Design system" subtitle="Sample content for shared UI components. These are not team statistics."
-      actions={<Button onPress={() => setMessage('Sample primary action pressed.')}><Trophy />Sample action</Button>} />
+      actions={<><Button variant="secondary" onPress={() => setReview(true)}>Preview import review</Button><Button onPress={() => setMessage('Sample primary action pressed.')}><Trophy />Sample action</Button></>} />
     <p role="status" aria-live="polite" className="text-sm text-text-secondary">{message}</p>
 
     <SectionCard title="HeroUI buttons" subtitle="Real v3 variants. Ghost is the low-emphasis option; there is no light variant.">
@@ -128,6 +132,7 @@ export function DesignPreview() {
     <SectionCard title="Match rows"><MatchList rows={[{ id: 'sample', date: '2026-01-01', opponent: 'Sample opponent', venue: 'Home', venueName: null, matchType: 'Friendly', overs: 20, mora: null, opposition: null, outcome: null, margin: null, marginType: null, isInternal: false, source: 'manual' }]} /></SectionCard>
     <SectionCard title="Alerts, steps and overlays"><div className="space-y-4">{(['info', 'warning', 'error', 'success'] as const).map((tone) => <Banner key={tone} tone={tone}>Sample {tone} notice</Banner>)}<Stepper step={3} /><div className="flex gap-3"><Button onPress={() => setDialog(true)}>Preview confirmation</Button><Button variant="secondary" onPress={() => setDrawer(true)}>Preview drawer</Button></div><ConfirmDialog open={dialog} title="Sample confirmation" onClose={() => setDialog(false)} onConfirm={() => { setMessage('Sample confirmed.'); setDialog(false) }}>This preview does not change team data.</ConfirmDialog><EditDrawer title="Sample edit panel" open={drawer} onClose={() => setDrawer(false)}><label className="block text-sm">Sample name<input className="ui-field mt-2" defaultValue="Sample Player" /></label></EditDrawer></div></SectionCard>
     <SectionCard title="Loading state"><PageSkeleton kind="profile" /></SectionCard>
+    <SectionCard title="Error state" subtitle="Sample retry does not access the database."><PageError retry={() => setMessage('Sample retry pressed.')} /></SectionCard>
 
     <SectionCard title="Type scale" subtitle="Inter for content; uppercase Jersey 25 only for display text.">
       <div className="space-y-5">

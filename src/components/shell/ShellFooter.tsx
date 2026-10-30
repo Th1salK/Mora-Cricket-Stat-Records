@@ -38,7 +38,7 @@ export function ShellFooter({ isAdmin, onNavigate }: { isAdmin: boolean; onNavig
       <p className="text-sm font-semibold">Team admin?</p>
       <p className="mt-2 text-xs leading-4 text-text-secondary">Sign in to add matches and update scorecards.</p>
       <Link href="/login" onNavigate={onNavigate}
-        className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-[12px] bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-brand-hover active:bg-brand-pressed">
+        className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-[12px] bg-brand-pressed px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-brand-deep active:bg-brand-deep">
         <Lock />Admin login
       </Link>
     </div>}

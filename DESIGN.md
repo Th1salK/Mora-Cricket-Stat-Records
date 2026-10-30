@@ -5,7 +5,7 @@ Every UI change (by a person or an AI agent) must follow this file.
 
 - **Figma:** "Mora Cricket Stats new UI" — https://www.figma.com/design/nojZeIQzhhwyTojBm2QHGZ/Mora-Cricket-Stats-new-UI
 - **Built with:** Next.js 16 App Router · React 19 · Tailwind CSS 4 · **HeroUI v3** (`@heroui/react`, `@heroui/styles`)
-- **Last updated:** 28 Oct 2026 (UI revamp R1–R8)
+- **Last updated:** 30 Oct 2026 (UI verification and contrast corrections)
 
 - **Design images:** every Figma screen is exported to `docs/design/screens/` (see §8 for which file belongs to which screen). Open the image before building or changing a screen.
 - **Agent rules:** `AGENTS.md` (repo root) holds the coding rules every agent must follow.
@@ -47,13 +47,13 @@ All colours are CSS variables defined once in `src/app/globals.css`. **Never wri
 | `--default-foreground` | `#ecedee` | — | Text on default buttons |
 | `--field-background` | `#27272a` | bg/input | Inputs, selects |
 | `--field-foreground` | `#ecedee` | — | Input text |
-| `--field-placeholder` | `#71717a` | text/muted | Placeholder |
-| `--muted` | `#71717a` | text/muted | Captions, units, table head |
-| `--accent` | `#3b7bf0` | brand/primary | Primary buttons, links, focus, active states |
+| `--field-placeholder` | `#a1a1aa` | text/secondary | Placeholder (5.81:1 on inputs) |
+| `--muted` | `#a1a1aa` | text/secondary | Captions, units, table head |
+| `--accent` | `#3b7bf0` | brand/primary | Charts, focus and active accents; button fills use brand-pressed |
 | `--accent-foreground` | `#ffffff` | text/on-brand | Text on primary |
 | `--success` | `#17c964` | status/win | Won, positive |
 | `--warning` | `#f5a524` | status/draw, accent/gold | Draw/tie, "check" states, trophies |
-| `--danger` | `#f31260` | status/loss, accent/ball | Lost, errors, wickets, destructive |
+| `--danger` | `#ff6b9b` | status/loss, accent/ball | Accessible error text; destructive fills use danger-action |
 | `--border` | `#3f3f46` | border/strong | Input borders, outlined buttons |
 | `--separator` | `rgba(255,255,255,0.15)` | border/subtle | Dividers, card outlines, sidebar edge |
 | `--focus` | `#3b7bf0` | — | Focus ring |
@@ -65,16 +65,19 @@ All colours are CSS variables defined once in `src/app/globals.css`. **Never wri
 | Variable | Value | Use |
 | --- | --- | --- |
 | `--text-secondary` | `#a1a1aa` | Secondary text, idle nav items, sub-labels |
-| `--brand-hover` | `#6a9df5` | Hover on primary; active nav icon; sort arrow |
-| `--brand-pressed` | `#2459c9` | Pressed primary |
-| `--brand-deep` | `#1d4ab0` | Match header panel base colour |
+| `--brand-hover` | `#6a9df5` | Active nav icon, links, all-rounder initials and sort arrow |
+| `--brand-pressed` | `#2459c9` | Primary action fill (white text: 6.27:1) |
+| `--brand-deep` | `#1d4ab0` | Match header base; primary action hover/pressed fill (white: 7.90:1) |
 | `--brand-soft` | `rgba(59,123,240,0.20)` | Active nav background, soft brand chips, avatar fill |
 | `--brand-row` | `rgba(59,123,240,0.08)` | Highlighted table row (e.g. top scorer) |
 | `--teal` | `#36ada3` | Eyebrow labels, icons in the season selector |
 | `--teal-bright` | `#4fd1c5` | "Stats Hub", not-out names, runs highlights |
 | `--gold` | `#f5a524` | Rank 1, trophies, milestones, "check" warnings |
-| `--ball` | `#f31260` | Wickets numbers, bowling icons |
-| `--win` / `--loss` / `--draw` | `#17c964` / `#f31260` / `#f5a524` | Result badges and bars |
+| `--ball` | `#ff6b9b` | Wickets numbers, bowling icons |
+| `--danger-action` / `--danger-action-hover` | `#c70f4d` / `#b20d44` | Destructive button fills with white text |
+| `--win` / `--loss` / `--draw` | `#17c964` / `#ff6b9b` / `#f5a524` | Result badges and bars |
+
+The 30 October accessibility corrections override the older screen colours where needed for readable small text. Keep the original accent blue for charts and accents; use the darker action fills for white labels. Never use brand-hover as a white-label button fill.
 
 Soft fills use the colour at 12–20% opacity with the full colour as text (e.g. Won = green text on green 20%).
 
@@ -178,7 +181,7 @@ Shared components live in `src/components/ui/` (generic) and `src/components/she
 
 | Component | HeroUI base | Spec |
 | --- | --- | --- |
-| **Button** | `Button` | Sizes sm (32px) / md (40px) / lg (48px), radius 12px. Variants: **primary** (accent bg, white text) for the one main action; **secondary** (default bg) for other actions ("Export CSV", "Save draft"); **ghost/light** for low emphasis ("Back", "Cancel"); **outline** (border `--border`) for "Load more", "Publish anyway"; **danger** for delete. Icon-only buttons need `aria-label`. |
+| **Button** | `Button` | Sizes sm (32px) / md (40px) / lg (48px), radius 12px. Variants: **primary** (brand-pressed bg, white text; brand-deep on hover/press) for the one main action; **secondary** (default bg) for other actions ("Export CSV", "Save draft"); **ghost/light** for low emphasis ("Back", "Cancel"); **outline** (border `--border`) for "Load more", "Publish anyway"; **danger** for delete. Icon-only buttons need `aria-label`. |
 | **PageHeader** | — | Eyebrow (teal Label/Small) · Title (Display/H1, uppercase) · Subtitle (Body/M secondary) · actions on the right (wrap under on mobile). |
 | **SectionCard** | `Card` | `--surface`, radius 14px, padding 20px. Header: title (H3) + subtitle (Body/S muted) + optional action on the right. |
 | **StatTile** | — | Raised tile (or card on the dashboard): optional icon badge, label (Body/S muted), value (Stat M or Stat L), hint (Body/S muted). Optional tone tint (teal/ball/gold/brand) for "featured" tiles like Runs, Wickets, High score, Best. |
@@ -398,7 +401,7 @@ If any of these become real (new optional fields), update this table first.
 
 ## 11. Accessibility
 
-- Text contrast ≥ 4.5:1 (muted `#71717a` is only for secondary text on `--surface` or darker; never for essential content on `--surface-secondary`).
+- Small text contrast ≥ 4.5:1. Muted and placeholder text use `#a1a1aa` on surface or surface-secondary. Use foreground text on surface-tertiary; secondary text there does not meet 4.5:1. Disabled controls and decorative graphics are excluded.
 - Every interactive element is reachable by keyboard with a visible focus ring (`--focus`, 2px, offset 2px).
 - Icon-only buttons have `aria-label`. Decorative icons are `aria-hidden`.
 - Navigation uses `<nav aria-label>`; current page uses `aria-current="page"`.
@@ -438,3 +441,4 @@ If any of these become real (new optional fields), update this table first.
 | 27 Oct 2026 | First version, written from the Figma file after Phase 1. |
 | 27 Oct 2026 | Added screen image index (§8.14), dismissal/team-name rules, removed "Did not bat" from match detail. |
 | 28 Oct 2026 | R1–R8: public screens, scorecards, CSV exports, Records, admin drafts and management, re-import, and shared loading/error states. |
+| 30 Oct 2026 | Accessible primary/destructive action fills, brighter red/secondary text, 40px search and mobile link targets, controlled-overlay fixes and safe import/error previews. |

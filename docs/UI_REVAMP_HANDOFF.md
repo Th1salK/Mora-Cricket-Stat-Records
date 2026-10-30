@@ -4,7 +4,38 @@ Recorded: 28 October 2026. Branch: feature/ui-revamp.
 
 ## Current continuation
 
-### Latest scope: finish code checks only
+### 30 October: resumed browser and accessibility checklist
+
+The owner explicitly requested completion of the remaining checklist. This supersedes the earlier code-only scope below. R8 must still not be described as complete until the outstanding authenticated and browser checks are actually verified.
+
+Verified in the preceding 30 October production-browser pass (before the contrast/overlay rebuild):
+- Matches, Players, profiles, batting, bowling and Records were inspected at 1440px and 390px; login at both widths. Missing assets/data use the documented fallbacks.
+- The older scorecard measured viewport 390px and document 390px. Bowling table width 418px was contained by a 325px scrolling wrapper; batting fit its wrapper.
+- A real mobile leader link opened its profile with season=all retained.
+- /career?season=all navigated to /records?season=all. Production /design, invalid match/player IDs and valid-but-missing IDs showed not-found content.
+- Signed-out /admin/import, /admin/import/<id>, /admin/drafts, /admin/matches, /admin/players and /stats/enter all navigated to /login. Login hid public navigation.
+- Bowling qualifier keyboard Tab/Space/Down/Enter selected Min. 5 overs, updated min=30, and restored focus. Sample season keyboard selection changed the preview URL to season=preview-2025; current/count/check indicators were visible.
+
+Source fixes carried over from that pass:
+- ShareButton: accessible name for copying a scorecard link.
+- UrlControls: 40px search field and input.
+- Player profile: 40px recent-performance links.
+- ConfirmDialog/EditDrawer: controlled state on Backdrop without an unused trigger root; Drawer.Body for scrolling.
+
+Additional fixes in this continuation:
+- globals.css, DraftReview, ImportClient, ShellFooter and Stepper: accessible primary action fills, placeholders, muted/red text and destructive button fills. DESIGN.md documents the deliberate accessibility overrides to the original colours.
+- globals.css, DraftInningsEditor and LeaderCard: 40px mobile table links, review-name inputs and mobile leader-name links. The duplicate warning's View matches link also has a 40px target.
+- PlayerAvatar: readable all-rounder initials using brand-hover while preserving the blue fill.
+- PageError: use Next.js 16.4 retry() so Try again re-fetches failed page data, following the installed framework guide.
+- ImportReviewPreview (new), DesignPreview: clearly labelled local-only import-review/duplicate/publish fixtures and an error/retry preview. They import no server actions and never save sample team records.
+
+Numerical contrast checks: primary white labels 6.27:1, primary hover 7.90:1, placeholders 5.81:1, error text on raised surface 5.55:1, destructive labels 5.83:1 and hover 6.92:1. These checks cover the specified pairs, not a claim of exhaustive all-screen accessibility certification.
+
+Current code verification: lint passed with the existing importer _ignored warning; typecheck passed; all 224 tests across 40 files passed unchanged; production build passed with the two existing HeroUI CSS warnings and parent lockfile warning. git diff --check passed and all 18 verification files use LF. Final browser checks remain in progress. Do not replace pending items with a passing claim without new evidence.
+
+Still pending: rebuilt browser checks for the five earlier fixes; modal/drawer Tab/Shift+Tab trapping, Escape and focus return; reduced-motion checks; empty/error/loading recovery; import-review tabs and fixed phone actions in the safe preview; real authenticated drafts, publish, aliases, active undo, guarded deletion and re-import with disposable fixtures. No credentials, authentication bypasses, database writes, packages, commits or deployments have been used in these verification passes.
+
+### Earlier scope (historical): finish code checks only
 
 The owner requested completion, then explicitly selected **“Finish code checks only”** when asked about further shared-desktop browser testing. Browser testing has therefore been excluded from this continuation by the owner. Do not represent the remaining visual, keyboard-in-browser, authenticated or destructive workflows as verified.
 

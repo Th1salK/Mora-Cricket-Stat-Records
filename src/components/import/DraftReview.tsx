@@ -63,10 +63,10 @@ export default function DraftReview({
   const preview = buildPublishPayload(details, draft, players)
   const previewBlocking = preview.problems.filter((problem) => problem.blocking)
   const nonBlocking = preview.problems.filter((problem) => !problem.blocking)
-  const blockingMessages = [
+  const blockingMessages = Array.from(new Set([
     ...warnings.filter((warning) => warning.blocking).map((warning) => warning.message),
     ...previewBlocking.map((problem) => problem.message),
-  ]
+  ]))
   const ready = canPublish(draft) && preview.payload !== null
   const battingCount = preview.payload?.batting.length ?? 0
   const bowlingCount = preview.payload?.bowling.length ?? 0
@@ -263,7 +263,7 @@ export default function DraftReview({
           onClick={() => setConfirming(true)}
           disabled={!ready || busy}
           title={ready ? undefined : "Fix the blocking warnings first"}
-          className="min-h-10 flex-1 rounded-[12px] bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-10 flex-1 rounded-[12px] bg-brand-pressed px-4 py-2 text-sm font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
         >
           Publish match
         </button>
@@ -279,12 +279,12 @@ export default function DraftReview({
 
       {!ready && blockingMessages.length > 0 ? (
         <ul className="list-inside list-disc space-y-1 text-xs text-danger">
-          {Array.from(new Set(blockingMessages)).map((message) => (
+          {blockingMessages.map((message) => (
             <li key={message}>{message}</li>
           ))}
         </ul>
       ) : null}
-</aside></div>      <ConfirmDialog open={!!duplicate} title="Possible duplicate match" confirmLabel="Publish anyway" busy={busy} onClose={() => duplicate?.onDismiss?.()} onConfirm={() => duplicate?.onPublishAnyway()}><p>{duplicate?.message}</p><p className="mt-3">If this is a second game on the same day, publish anyway.</p><Link href="/matches" className="mt-3 inline-block text-brand-hover">View matches</Link></ConfirmDialog>
+</aside></div>      <ConfirmDialog open={!!duplicate} title="Possible duplicate match" confirmLabel="Publish anyway" busy={busy} onClose={() => duplicate?.onDismiss?.()} onConfirm={() => duplicate?.onPublishAnyway()}><p>{duplicate?.message}</p><p className="mt-3">If this is a second game on the same day, publish anyway.</p><Link href="/matches" className="mt-3 inline-flex min-h-10 items-center text-brand-hover">View matches</Link></ConfirmDialog>
       <ConfirmDialog open={confirming && ready} title="Publish this match?" confirmLabel="Confirm publish" busy={busy} onClose={() => setConfirming(false)} onConfirm={async () => { await onPublish(); setConfirming(false) }}><p>Mora vs {details.opponent}, {details.date}, {details.matchType}: {battingCount} batting and {bowlingCount} bowling records will be saved.</p>{nonBlocking.length > 0 && <ul className="mt-4 list-inside list-disc rounded-[12px] bg-surface-secondary p-3 text-gold">{nonBlocking.map((problem, i) => <li key={i}>{problem.message}</li>)}</ul>}</ConfirmDialog>
 
     </div>
