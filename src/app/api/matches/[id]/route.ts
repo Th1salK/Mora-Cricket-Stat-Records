@@ -23,6 +23,7 @@ export async function GET(
   try {
     await connectDB()
     const { id } = await params
+    if (!mongoose.isValidObjectId(id)) return NextResponse.json({ error: "Invalid match ID" }, { status: 400 })
     const match = await Match.findById(id).select('-season').lean()
     if (!match) return NextResponse.json({ error: "Not found" }, { status: 404 })
     return NextResponse.json(match)
@@ -48,8 +49,9 @@ export async function PUT(
 
     await connectDB()
     const { id } = await params
+    if (!mongoose.isValidObjectId(id)) return NextResponse.json({ error: "Invalid match ID" }, { status: 400 })
     const body = await request.json()
-    const parsed = matchSchema.safeParse(body)
+    const parsed = matchSchema.safeParse({ ...body, ...(body.toss === null ? { toss: undefined } : {}), ...(body.result === null ? { result: undefined } : {}) })
 
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }, { status: 400 })
@@ -58,7 +60,7 @@ export async function PUT(
     const seasonId = await ensureSeasonForDate(new Date(parsed.data.date))
     const updated = await Match.findByIdAndUpdate(
       id,
-      { ...parsed.data, season: seasonId },
+      { $set: { ...parsed.data, season: seasonId }, ...((body.toss === null || body.result === null) ? { $unset: { ...(body.toss === null ? { toss: 1 } : {}), ...(body.result === null ? { result: 1 } : {}) } } : {}) },
       { new: true, runValidators: true }
     ).select('-season')
 

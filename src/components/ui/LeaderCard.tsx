@@ -1,0 +1,9 @@
+import Link from 'next/link'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
+import { RankBadge } from '@/components/ui/RankBadge'
+import type { PlayerRole } from '@/lib/ui/formatColors'
+import { cn } from '@/lib/ui/cn'
+export function LeaderCard({ rank, name, role, href, value, unit, stats, compact = false }: { rank: number; name: string; role?: PlayerRole; href: string; value: string; unit: string; stats: { label: string; value: string }[]; compact?: boolean }) {
+  if (compact) return <article className="rounded-[14px] border border-separator bg-surface p-4"><div className="flex items-center gap-3"><PlayerAvatar name={name} role={role} /><div className="min-w-0 flex-1"><Link href={href} className="flex min-h-10 items-center truncate font-semibold">{name}</Link><p className="text-xs text-text-secondary">{role}</p></div><strong className="text-3xl font-semibold tabular-nums">{value}<span className="sr-only"> {unit}</span></strong></div><dl className="mt-4 flex gap-5">{stats.map((stat) => <div key={stat.label}><dd className="text-sm font-semibold">{stat.value}</dd><dt className="text-xs text-text-secondary">{stat.label}</dt></div>)}</dl></article>
+  return <article className={cn('rounded-[14px] border border-separator p-5', rank === 1 ? 'bg-surface-secondary' : 'bg-surface')}><div className="flex items-center gap-3"><RankBadge rank={rank} /><div className="min-w-0 flex-1"><Link className="font-semibold" href={href}>{name}</Link><p className="text-xs text-text-secondary">{role}</p></div><PlayerAvatar name={name} role={role} /></div><p className="my-5"><strong className="text-4xl font-semibold tabular-nums">{value}</strong><span className="ml-2 text-xs text-text-secondary">{unit}</span></p><dl className="flex gap-5">{stats.map((stat) => <div key={stat.label}><dd className="text-sm font-semibold">{stat.value}</dd><dt className="text-xs text-text-secondary">{stat.label}</dt></div>)}</dl></article>
+}
