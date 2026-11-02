@@ -48,7 +48,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
     {intro}
     <div className="relative grid gap-4 md:gap-5">
       <section aria-label="Mora Cricket" className="relative flex min-h-[240px] overflow-hidden rounded-[20px] bg-brand-deep md:min-h-[366px]">
-        {hasPhoto ? <Image src="/images/team-huddle.jpg" alt="" fill priority sizes="(min-width: 768px) calc(100vw - 336px), calc(100vw - 32px)" className="object-cover" />
+        {hasPhoto ? <Image src="/images/team-huddle.jpg" alt="" fill preload sizes="(min-width: 768px) calc(100vw - 336px), calc(100vw - 32px)" className="object-cover" />
           : <div aria-hidden="true" className="absolute inset-0 bg-linear-to-br from-brand-deep to-background" />}
         <div aria-hidden="true" className="absolute inset-0 bg-linear-to-r from-background/80 to-background/35" />
         <div className="relative flex w-full flex-col justify-end p-5 md:justify-center md:p-10 xl:pr-[390px]">
