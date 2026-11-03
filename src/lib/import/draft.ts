@@ -8,9 +8,9 @@ import {
   type BowlingRow,
   type Extraction,
   type Innings,
-} from "./schema"
-import { checkExtraction, type Warning } from "./checks"
-import { matchName, normalise, similarity, type NameMatch, type PlayerLite } from "./matchPlayers"
+} from "@/lib/import/schema"
+import { checkExtraction, type Warning } from "@/lib/import/checks"
+import { matchName, normalise, similarity, type NameMatch, type PlayerLite } from "@/lib/import/matchPlayers"
 
 export type Side = "mora" | "opposition"
 
@@ -38,6 +38,7 @@ export type Draft = {
 export type DraftWarning = Warning & { blocking: boolean }
 
 export const MatchDetailsSchema = z.object({
+  season: z.string().regex(/^[a-f\d]{24}$/i, "Choose a season").optional(),
   matchType: z.enum(MATCH_TYPES),
   date: z
     .string()

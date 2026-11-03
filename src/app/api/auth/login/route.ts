@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
-import { connectDB } from "../../../../lib/mongodb"
-import User from "../../../../models/User"
-import Session from "../../../../models/Session"
+import { connectDB } from "@/lib/mongodb"
+import User from "@/models/User"
+import Session from "@/models/Session"
 import {
   createSessionToken,
   hashToken,
   buildSessionCookieOptions,
   SESSION_MAX_AGE_MS,
-} from "../../../../lib/auth"
+} from "@/lib/auth"
 import {
   checkLoginRateLimit,
   recordLoginFailure,
   clearLoginRateLimit,
   loginLockoutSeconds,
-} from "../../../../lib/rateLimit"
-import { loginSchema } from "../../../../lib/validations"
+} from "@/lib/rateLimit"
+import { loginSchema } from "@/lib/validations"
 
 export async function POST(request: Request) {
   try {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const { username, password } = parsed.data
 
     await connectDB()
-    const user = await User.findOne({ username: username.trim().toLowerCase() })
+    const user = await User.findOne({ username: username.trim().toLowerCase() }).lean()
 
     const passwordOk = user ? await bcrypt.compare(password, user.passwordHash) : false
 
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       expiresAt: new Date(Date.now() + SESSION_MAX_AGE_MS),
     })
 
-    const response = NextResponse.json({ ok: true, username: user.username })
+    const response = NextResponse.json({ ok: true, username: user.username, role: user.role ?? 'admin' })
     response.cookies.set("admin_session", token, buildSessionCookieOptions())
     return response
   } catch {

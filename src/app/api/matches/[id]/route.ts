@@ -4,7 +4,8 @@ import { connectDB } from "@/lib/mongodb"
 import { assertCanWrite } from "@/lib/auth"
 import { checkApiRateLimit, apiLockoutSeconds } from "@/lib/rateLimit"
 import { matchSchema } from "@/lib/validations"
-import { ensureSeasonForDate } from "@/lib/seasonsServer"
+import { admitSeason } from "@/lib/seasonsServer"
+import { SeasonError } from "@/lib/seasonValidation"
 import Match from "@/models/Match"
 import BattingPerformance from "@/models/BattingPerformance"
 import BowlingPerformance from "@/models/BowlingPerformance"
@@ -24,7 +25,7 @@ export async function GET(
     await connectDB()
     const { id } = await params
     if (!mongoose.isValidObjectId(id)) return NextResponse.json({ error: "Invalid match ID" }, { status: 400 })
-    const match = await Match.findById(id).select('-season').lean()
+    const match = await Match.findById(id).lean()
     if (!match) return NextResponse.json({ error: "Not found" }, { status: 404 })
     return NextResponse.json(match)
   } catch {
@@ -57,16 +58,28 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }, { status: 400 })
     }
 
-    const seasonId = await ensureSeasonForDate(new Date(parsed.data.date))
-    const updated = await Match.findByIdAndUpdate(
-      id,
-      { $set: { ...parsed.data, season: seasonId }, ...((body.toss === null || body.result === null) ? { $unset: { ...(body.toss === null ? { toss: 1 } : {}), ...(body.result === null ? { result: 1 } : {}) } } : {}) },
-      { new: true, runValidators: true }
-    ).select('-season')
+    const session = await mongoose.startSession()
+    let updated
+    try {
+      updated = await session.withTransaction(async () => {
+        const existing = await Match.findById(id).session(session)
+        if (!existing) throw new MatchNotFoundError()
+        const existingSeasonId = existing.season ? String(existing.season) : undefined
+        const seasonId = await admitSeason(parsed.data.season ?? existingSeasonId, session, existingSeasonId)
+        return await Match.findByIdAndUpdate(
+          id,
+          { $set: { ...parsed.data, season: seasonId }, ...((body.toss === null || body.result === null) ? { $unset: { ...(body.toss === null ? { toss: 1 } : {}), ...(body.result === null ? { result: 1 } : {}) } } : {}) },
+          { returnDocument: 'after', runValidators: true, session }
+          )
+
+      })
+    } finally { await session.endSession() }
 
     if (!updated) return NextResponse.json({ error: "Match not found" }, { status: 404 })
     return NextResponse.json(updated)
-  } catch {
+  } catch (error) {
+    if (error instanceof SeasonError) return NextResponse.json({ error: error.message }, { status: 400 })
+    if (error instanceof MatchNotFoundError) return NextResponse.json({ error: error.message }, { status: 404 })
     return NextResponse.json({ error: "Failed to update match" }, { status: 500 })
   }
 }

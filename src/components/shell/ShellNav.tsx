@@ -5,10 +5,10 @@ import { icons } from '@/components/ui/icons'
 import { cn } from '@/lib/ui/cn'
 import { isActive, navGroups } from '@/lib/ui/nav'
 
-export function ShellNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
+export function ShellNav({ isAdmin, isSuperadmin = false, onNavigate }: { isAdmin: boolean; isSuperadmin?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname()
   return <nav aria-label="Main navigation" className="space-y-6">
-    {navGroups(isAdmin).map((group) => <div key={group.label}>
+    {navGroups(isAdmin, isSuperadmin).map((group) => <div key={group.label}>
       <p className="mb-2 px-3 text-xs leading-4 font-medium text-muted">{group.label}</p>
       <ul className="space-y-1">
         {group.items.map((item) => {

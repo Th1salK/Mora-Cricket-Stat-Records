@@ -1,3 +1,4 @@
+import { listSeasons, getCurrentSeason } from "@/lib/seasonsServer"
 import { redirect } from "next/navigation"
 import { notFound } from "next/navigation"
 import { getMatchDetail } from "@/lib/queries/matches"
@@ -18,7 +19,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const replaceMatchId = scalar(query.replace)
   const replacement = replaceMatchId ? await getMatchDetail(replaceMatchId) : null
   if (replaceMatchId && !replacement) notFound()
-  const drafts = await listDrafts()
+  const [drafts, seasons, current] = await Promise.all([listDrafts(), listSeasons(), getCurrentSeason()])
   await connectDB()
   const players = await Player.find({ isActive: true })
     .select("fullName shortName aliases")
@@ -27,6 +28,8 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
 
   return (
     <ImportClient
+      seasons={seasons}
+      currentSeasonId={current?.id}
       draftCount={drafts.length}
       replaceMatchId={replaceMatchId}
       initialDetails={replacement ? matchPrefill(replacement.match) : undefined}

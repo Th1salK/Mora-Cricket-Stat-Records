@@ -1,6 +1,6 @@
 import type { MatchTypeValue } from '@/lib/constants'
 
-// Choose calendar years or university years for automatic season assignment.
+// Legacy date-range helpers only. Match seasons are selected manually.
 export const SEASON_MODE: 'calendar' | 'university' = 'calendar'
 
 // First month (1–12) of a university season; ignored in calendar mode.

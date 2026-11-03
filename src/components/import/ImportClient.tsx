@@ -1,4 +1,5 @@
 "use client"
+import { SeasonField, type SeasonOption } from "@/components/ui/SeasonField"
 
 import Link from "next/link"
 import { OptionalMatchDetails } from "@/components/import/OptionalMatchDetails"
@@ -60,10 +61,10 @@ function blankDraft(): Draft {
   }
 }
 
-export default function ImportClient({ players, draftCount = 0, initialDetails, replaceMatchId }: { players: PlayerLite[]; draftCount?: number; initialDetails?: MatchDetails; replaceMatchId?: string }) {
+export default function ImportClient({ players, draftCount = 0, initialDetails, replaceMatchId, seasons, currentSeasonId }: { seasons: SeasonOption[]; currentSeasonId?: string; players: PlayerLite[]; draftCount?: number; initialDetails?: MatchDetails; replaceMatchId?: string }) {
   const router = useRouter()
   const [step, setStep] = useState<"upload" | "review">("upload")
-  const [details, setDetails] = useState<MatchDetails>(() => initialDetails ?? emptyDetails())
+  const [details, setDetails] = useState<MatchDetails>(() => initialDetails ?? { ...emptyDetails(), season: currentSeasonId })
   const [screenshots, setScreenshots] = useState<Screenshot[]>([])
   const [draftId, setDraftId] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -93,6 +94,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
       setError(parsed.error.issues[0]?.message ?? "Check the match details.")
       return null
     }
+    if (!parsed.data.season) { setError("Choose a season before continuing."); return null }
     return parsed.data
   }
 
@@ -281,7 +283,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
     screenshots.forEach((screenshot) => URL.revokeObjectURL(screenshot.url))
     setScreenshots([])
     setStep("upload")
-    setDetails(emptyDetails())
+    setDetails({ ...emptyDetails(), season: currentSeasonId })
     setDraftId(null)
     setDraft(null)
     setNotice(null)
@@ -302,6 +304,8 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
         draft={draft}
         players={players}
         details={details}
+        seasons={seasons}
+        existingSeasonId={replaceMatchId ? initialDetails?.season : undefined}
         onDraftChange={setDraft}
         onDetailsChange={setDetails}
         onSave={save}
@@ -338,6 +342,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
       <section className="rounded-[14px] border border-separator bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Match details</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SeasonField compact seasons={seasons} value={details.season} existingSeasonId={replaceMatchId ? initialDetails?.season : undefined} onChange={(season) => setDetails({ ...details, season })} />
           <label className="block text-xs text-text-secondary">
             Match type
             <select

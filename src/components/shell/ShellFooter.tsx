@@ -4,9 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@heroui/react'
 import { Lock, Logout } from '@/components/ui/icons'
-import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 
-export function ShellFooter({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
+export function ShellFooter({ isAdmin, isSuperadmin = false, onNavigate }: { isAdmin: boolean; isSuperadmin?: boolean; onNavigate?: () => void }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -26,9 +25,8 @@ export function ShellFooter({ isAdmin, onNavigate }: { isAdmin: boolean; onNavig
   return <footer className="mt-auto border-t border-separator pt-5">
     {isAdmin ? <>
       <div className="flex items-center gap-3">
-        <PlayerAvatar name="Admin" size={40} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Team Admin</p>
+          <p className="text-sm font-semibold">{isSuperadmin ? 'Superadmin' : 'Team Admin'}</p>
           <p className="text-xs text-win">Signed in</p>
         </div>
         <Button variant="ghost" isIconOnly aria-label="Sign out" isPending={pending} onPress={logout}><Logout /></Button>

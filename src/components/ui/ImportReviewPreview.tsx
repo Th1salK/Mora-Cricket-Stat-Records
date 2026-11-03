@@ -8,7 +8,7 @@ import type { PlayerLite } from '@/lib/import/matchPlayers'
 
 // Illustrative fixtures for /design only. No server actions or database writes.
 const players: PlayerLite[] = [{ id: '111111111111111111111111', fullName: 'Sample Player', shortName: 'Sample', aliases: [] }]
-const initialDetails: MatchDetails = { matchType: 'Friendly', date: '2026-01-01', opponent: 'Sample opposition', venue: 'Home', overs: 20 }
+const initialDetails: MatchDetails = { season: '111111111111111111111111', matchType: 'Friendly', date: '2026-01-01', opponent: 'Sample opposition', venue: 'Home', overs: 20 }
 const initialDraft: Draft = {
   unreadable: [],
   innings: [
@@ -38,7 +38,7 @@ export function ImportReviewPreview({ onBack }: { onBack: () => void }) {
       <Button variant="secondary" onPress={() => setDuplicate(true)}>Preview duplicate warning</Button>
     </div>
     <p role="status" className="text-sm text-text-secondary">{message}</p>
-    <DraftReview draft={draft} players={players} details={details} onDraftChange={setDraft} onDetailsChange={setDetails}
+    <DraftReview seasons={[{ id: '111111111111111111111111', name: 'Sample', startDate: '2026-01-01', endDate: '2027-01-01', isCurrent: true, endedAt: null }]} draft={draft} players={players} details={details} onDraftChange={setDraft} onDetailsChange={setDetails}
       onSave={() => setMessage('Sample draft saved in this preview only.')} saveLabel="Preview save draft" saving={false}
       onPublish={() => setMessage('Sample publish confirmed. No team records were written.')} publishing={false}
       duplicate={duplicate ? { message: 'Sample duplicate warning; no match is being published.', onPublishAnyway: () => { setMessage('Sample duplicate confirmed. No team records were written.'); setDuplicate(false) }, onDismiss: () => setDuplicate(false) } : null}

@@ -1,5 +1,6 @@
 "use client"
 
+import type { SeasonOption } from "@/components/ui/SeasonField"
 import Link from "next/link"
 import { PublishedSummary } from "@/components/import/PublishedSummary"
 import { useState } from "react"
@@ -20,6 +21,8 @@ import {
 import DraftReview from "@/components/import/DraftReview"
 
 type SavedDraftClientProps = {
+  seasons: SeasonOption[]
+  existingSeasonId?: string
   draftId: string
   replaceMatchId?: string
   initialDetails: unknown
@@ -29,6 +32,8 @@ type SavedDraftClientProps = {
 
 export default function SavedDraftClient({
   draftId,
+  seasons,
+  existingSeasonId,
   replaceMatchId,
   initialDetails,
   initialDraft,
@@ -41,7 +46,7 @@ export default function SavedDraftClient({
   })
   const [details, setDetails] = useState<MatchDetails | null>(() => {
     const parsed = MatchDetailsSchema.safeParse(initialDetails)
-    return parsed.success ? parsed.data : null
+    return parsed.success ? { ...parsed.data, season: parsed.data.season ?? existingSeasonId } : null
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -156,6 +161,8 @@ export default function SavedDraftClient({
       draft={draft}
       players={players}
       details={details}
+      seasons={seasons}
+      existingSeasonId={existingSeasonId}
       onDraftChange={setDraft}
       onDetailsChange={setDetails}
       onSave={save}

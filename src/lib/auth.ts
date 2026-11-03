@@ -1,9 +1,10 @@
 import { createHash, randomBytes } from 'crypto'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { connectDB } from './mongodb'
-import Session from '../models/Session'
-import User, { IUser } from '../models/User'
+import { connectDB } from '@/lib/mongodb'
+import Session from '@/models/Session'
+import User, { type IUser } from '@/models/User'
+import { isSuperadminRole } from '@/lib/adminAccounts'
 
 export const SESSION_COOKIE = 'admin_session'
 export const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -49,7 +50,7 @@ export async function getSessionToken(): Promise<string | null> {
 }
 
 /** Returns the admin user for the current request, or null. Expired sessions are deleted lazily. */
-export async function getCurrentUser(): Promise<IUser | null> {
+export async function getCurrentUser(): Promise<Pick<IUser, '_id' | 'username' | 'role'> | null> {
   const token = await getSessionToken()
   if (!token) return null
 
@@ -63,7 +64,8 @@ export async function getCurrentUser(): Promise<IUser | null> {
     return null
   }
 
-  const user = await User.findById(session.userId)
+  // Read stored fields directly so a model cached before the role field existed cannot hide it.
+  const user = await User.findById(session.userId).select('_id username role').lean()
   return user ?? null
 }
 
@@ -107,4 +109,20 @@ export function assertSameOrigin(request: Request): NextResponse | null {
 /** Convenience guard combining CSRF + auth checks for mutation routes. */
 export async function assertCanWrite(request: Request): Promise<NextResponse | null> {
   return assertSameOrigin(request) ?? (await requireAdmin())
+}
+
+/** Account management is reserved for the stored superadmin role. */
+export async function isSuperadmin(): Promise<boolean> {
+  return isSuperadminRole((await getCurrentUser())?.role)
+}
+
+export async function requireSuperadmin(): Promise<NextResponse | null> {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized. Please log in as admin.' }, { status: 401 })
+  if (!isSuperadminRole(user.role)) return NextResponse.json({ error: 'Only the superadmin can manage admin accounts.' }, { status: 403 })
+  return null
+}
+
+export async function assertCanManageAdmins(request: Request): Promise<NextResponse | null> {
+  return assertSameOrigin(request) ?? (await requireSuperadmin())
 }

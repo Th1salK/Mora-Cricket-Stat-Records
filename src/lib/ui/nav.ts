@@ -2,7 +2,7 @@ export type NavIcon = 'Grid' | 'Calendar' | 'Users' | 'Bat' | 'Ball' | 'Trophy' 
 export type NavItem = { label: string; href: string; icon: NavIcon }
 export type NavGroup = { label: string; items: NavItem[] }
 
-export function navGroups(isAdmin: boolean): NavGroup[] {
+export function navGroups(isAdmin: boolean, isSuperadmin = false): NavGroup[] {
   const groups: NavGroup[] = [
     { label: 'Overview', items: [
       { label: 'Dashboard', href: '/', icon: 'Grid' },
@@ -15,11 +15,15 @@ export function navGroups(isAdmin: boolean): NavGroup[] {
       { label: 'Records', href: '/records', icon: 'Trophy' },
     ] },
   ]
-  if (isAdmin) groups.push({ label: 'Admin', items: [
+  if (isAdmin && isSuperadmin) groups.push({ label: 'Superadmin', items: [
+    { label: 'Manage admins', href: '/admin/admins', icon: 'UserCog' },
+  ] })
+  if (isAdmin) groups.push({ label: isSuperadmin ? 'Management' : 'Admin', items: [
     { label: 'Import match', href: '/admin/import', icon: 'Upload' },
     { label: 'Saved drafts', href: '/admin/drafts', icon: 'Edit' },
     { label: 'Manage matches', href: '/admin/matches', icon: 'List' },
     { label: 'Manage players', href: '/admin/players', icon: 'UserCog' },
+    { label: 'Manage seasons', href: '/admin/seasons', icon: 'Calendar' },
   ] })
   return groups
 }

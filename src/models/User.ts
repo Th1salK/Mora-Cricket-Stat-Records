@@ -3,6 +3,7 @@ import mongoose, { Document, Model } from 'mongoose'
 export interface IUser extends Document {
   username: string
   passwordHash: string
+  role?: 'admin' | 'superadmin'
   createdAt: Date
   updatedAt: Date
 }
@@ -11,9 +12,12 @@ const UserSchema = new mongoose.Schema<IUser>(
   {
     username: { type: String, required: true, unique: true, trim: true, lowercase: true },
     passwordHash: { type: String, required: true },
+    role: { type: String, enum: ['admin', 'superadmin'], default: 'admin' },
   },
   { timestamps: true }
 )
+
+UserSchema.index({ role: 1 }, { unique: true, partialFilterExpression: { role: 'superadmin' } })
 
 const User: Model<IUser> =
   (mongoose.models.User as Model<IUser>) ||

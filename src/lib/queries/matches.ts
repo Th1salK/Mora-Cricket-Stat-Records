@@ -23,7 +23,7 @@ function matchQuery(filter: MatchesFilter) {
     ...(literal ? { $or: [{ opponent: literal }, { venueName: literal }] } : {}),
   }
 }
-const fields = '_id date opponent venue venueName matchType overs innings result source'
+const fields = '_id season date opponent venue venueName matchType overs innings result source'
 export async function listMatches(filter: MatchesFilter) {
   const query = matchQuery(filter)
   await connectDB()

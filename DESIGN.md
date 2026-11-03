@@ -349,7 +349,7 @@ Table with Player, Role, Bat, Bowl, Active switch, edit/more. Edit panel (right 
 
 The images contain sample data (e.g. shirt numbers, player of the match). §10 always wins over what an image shows.
 
-**Images and logo** (exported by hand from the Figma `_Assets` frame): `public/brand/mora-logo.png`, `public/images/team-huddle.jpg` (dashboard hero), `public/images/team-celebration.jpg` (login), `public/images/player-photo.jpg` (not used until players have photos). If a file is missing, use a navy gradient (`--brand-deep` → `--background`) instead.
+**Images and logo** (exported by hand from the Figma `_Assets` frame): `public/brand/mora-logo.png`, `public/images/team-huddle.jpg` (dashboard hero), `public/images/team-celebration.png` (login), `public/images/player-photo.jpg` (not used until players have photos). If a file is missing, use a navy gradient (`--brand-deep` → `--background`) instead.
 
 ## 9. Data display rules
 

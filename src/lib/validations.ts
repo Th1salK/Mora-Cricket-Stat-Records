@@ -13,6 +13,7 @@ export const loginSchema = z.object({
 })
 
 export const matchSchema = z.object({
+  season: z.string().regex(/^[a-f\d]{24}$/i, "Choose a season").optional(),
   date: z.string().min(1, "Date is required").refine((val) => !isNaN(Date.parse(val)), {
     message: "Invalid date format",
   }),

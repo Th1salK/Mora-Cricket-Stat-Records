@@ -22,7 +22,6 @@ import { StatTile, type StatTone } from '@/components/ui/StatTile'
 import { MatchTypeBadge } from '@/components/ui/MatchTypeBadge'
 import { ResultBadge } from '@/components/ui/ResultBadge'
 import { RoleChip } from '@/components/ui/RoleChip'
-import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { RankBadge } from '@/components/ui/RankBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { icons, Trophy, Ball, Bat, Calendar, Search } from '@/components/ui/icons'
@@ -102,12 +101,8 @@ export function DesignPreview() {
       <div className="mt-4 flex flex-wrap gap-2">{roles.map((role) => <RoleChip key={role} role={role} />)}</div>
     </SectionCard>
 
-    <SectionCard title="Avatars and ranks" subtitle="Initials, all roles, four sizes and the empty-name fallback.">
-      <div className="flex flex-wrap items-center gap-4">
-        {([28, 40, 56, 72] as const).map((size, index) => <PlayerAvatar key={size} name="Behan Inuka" role={roles[index]} size={size} />)}
-        <PlayerAvatar name="Behan" /><PlayerAvatar name="" />
-      </div>
-      <div className="mt-4 flex gap-3">{[1, 2, 3, 4, 12].map((rank) => <RankBadge key={rank} rank={rank} />)}</div>
+    <SectionCard title="Rank badges" subtitle="Leaderboard positions, with emphasis on the top three.">
+      <div className="flex gap-3">{[1, 2, 3, 4, 12].map((rank) => <RankBadge key={rank} rank={rank} />)}</div>
     </SectionCard>
 
     <EmptyState icon={<Calendar size={22} />} title="No sample matches" message="Try a different season or match type."

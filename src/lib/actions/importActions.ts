@@ -7,7 +7,8 @@ import { getCurrentUser } from "@/lib/auth"
 import { headers } from "next/headers"
 import { checkApiRateLimit } from "@/lib/rateLimit"
 import { connectDB } from "@/lib/mongodb"
-import { ensureSeasonForDate } from "@/lib/seasonsServer"
+import { admitSeason } from "@/lib/seasonsServer"
+import { SeasonError } from "@/lib/seasonValidation"
 import BattingPerformance from "@/models/BattingPerformance"
 import BowlingPerformance from "@/models/BowlingPerformance"
 import ImportDraft from "@/models/ImportDraft"
@@ -73,6 +74,7 @@ export async function extractAction(
 ): Promise<ExtractActionResult> {
   const user = await getCurrentUser()
   if (!user) return { ok: false, error: "Not authorised" }
+  if (!(await checkApiRateLimit(new Request("http://localhost", { headers: await headers() })))) return { ok: false, error: "Too many requests. Try again later." }
 
   const images = ImagesSchema.safeParse(input)
   if (!images.success) {
@@ -128,6 +130,7 @@ export async function saveDraftAction(
 ): Promise<SaveDraftResult> {
   const user = await getCurrentUser()
   if (!user) return { ok: false, error: "Not authorised" }
+  if (!(await checkApiRateLimit(new Request("http://localhost", { headers: await headers() })))) return { ok: false, error: "Too many requests. Try again later." }
 
   if (!mongoose.isValidObjectId(draftId)) {
     return { ok: false, error: "Draft not found" }
@@ -167,6 +170,7 @@ export async function createManualDraftAction(
 ): Promise<SaveDraftResult> {
   const user = await getCurrentUser()
   if (!user) return { ok: false, error: "Not authorised" }
+  if (!(await checkApiRateLimit(new Request("http://localhost", { headers: await headers() })))) return { ok: false, error: "Too many requests. Try again later." }
 
   const parsedDetails = MatchDetailsSchema.safeParse(details)
   if (!parsedDetails.success) {
@@ -218,7 +222,7 @@ export async function publishAction(
   if (options?.replaceMatchId && !mongoose.isValidObjectId(options.replaceMatchId)) {
     return { ok: false, error: "Invalid match to replace" }
   }
-  if (options?.replaceMatchId && !(await checkApiRateLimit(new Request("http://localhost", { headers: await headers() })))) {
+  if (!(await checkApiRateLimit(new Request("http://localhost", { headers: await headers() })))) {
     return { ok: false, error: "Too many requests. Try again later." }
   }
 
@@ -331,13 +335,14 @@ export async function publishAction(
   let matchId = ""
 
   try {
-    const seasonId = await ensureSeasonForDate(new Date(payload.match.date))
     const session = await mongoose.startSession()
     try {
       await session.withTransaction(async () => {
-        if (options?.replaceMatchId) {
-          const old = await Match.findById(options.replaceMatchId).session(session)
-          if (!old) throw new Error("The match to replace no longer exists")
+        const old = options?.replaceMatchId ? await Match.findById(options.replaceMatchId).session(session) : null
+        if (options?.replaceMatchId && !old) throw new Error("The match to replace no longer exists")
+        const existingSeasonId = old?.season ? String(old.season) : undefined
+        const seasonId = await admitSeason(parsedDetails.data.season ?? existingSeasonId, session, existingSeasonId)
+        if (old) {
           await BattingPerformance.deleteMany({ matchId: old._id }, { session })
           await BowlingPerformance.deleteMany({ matchId: old._id }, { session })
           await Match.deleteOne({ _id: old._id }, { session })
@@ -389,6 +394,7 @@ export async function publishAction(
       await session.endSession()
     }
   } catch (err) {
+    if (err instanceof SeasonError) return { ok: false, error: err.message }
     console.error("Failed to publish import draft", draftId, err)
 
     if (err instanceof Error && err.message === "Draft was published by another request") {
