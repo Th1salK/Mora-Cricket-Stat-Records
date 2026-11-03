@@ -1,5 +1,5 @@
-import type { Extraction, Innings } from "./schema"
-import { countsAsOut, creditsBowler, oversToBalls, parseHowOut } from "./parse"
+import type { Extraction, Innings } from "@/lib/import/schema"
+import { countsAsOut, creditsBowler, oversToBalls, parseHowOut } from "@/lib/import/parse"
 
 export type Warning = {
   innings: number
@@ -11,7 +11,7 @@ function orZero(value: number | null): number {
   return value ?? 0
 }
 
-export function checkInnings(inn: Innings, n: number): Warning[] {
+export function checkInnings(inn: Innings, n: number, coverage = { batting: true, bowling: true }): Warning[] {
   const warnings: Warning[] = []
 
   const battingRuns = inn.batting.reduce((sum, row) => sum + orZero(row.runs), 0)
@@ -23,7 +23,7 @@ export function checkInnings(inn: Innings, n: number): Warning[] {
     orZero(extras.noBalls) +
     orZero(extras.penalty)
 
-  if (inn.total.runs != null && battingRuns + extrasTotal !== inn.total.runs) {
+  if (coverage.batting && inn.total.runs != null && battingRuns + extrasTotal !== inn.total.runs) {
     warnings.push({
       innings: n,
       code: "batting-total",
@@ -36,7 +36,7 @@ export function checkInnings(inn: Innings, n: number): Warning[] {
     return dismissal.type !== "other" && countsAsOut(dismissal.type)
   }).length
 
-  if (inn.total.wickets != null && battersOut !== inn.total.wickets) {
+  if (coverage.batting && inn.total.wickets != null && battersOut !== inn.total.wickets) {
     warnings.push({
       innings: n,
       code: "wickets",
@@ -63,7 +63,7 @@ export function checkInnings(inn: Innings, n: number): Warning[] {
   )
   const totalBalls = oversToBalls(inn.total.overs)
 
-  if (allBowlerOversValid && bowlerBalls !== totalBalls) {
+  if (coverage.bowling && allBowlerOversValid && bowlerBalls !== totalBalls) {
     warnings.push({
       innings: n,
       code: "overs",
@@ -91,7 +91,7 @@ export function checkInnings(inn: Innings, n: number): Warning[] {
     }
   }
 
-  if (inn.bowling.length > 0) {
+  if (coverage.batting && coverage.bowling && inn.bowling.length > 0) {
     const bowlerWickets = inn.bowling.reduce(
       (sum, bowler) => sum + orZero(bowler.wickets),
       0

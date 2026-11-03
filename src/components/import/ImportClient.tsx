@@ -1,5 +1,6 @@
 "use client"
 import { SeasonField, type SeasonOption } from "@/components/ui/SeasonField"
+import { Button } from '@heroui/react'
 
 import Link from "next/link"
 import { OptionalMatchDetails } from "@/components/import/OptionalMatchDetails"
@@ -72,6 +73,9 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [reading, setReading] = useState(false)
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [pdfStage, setPdfStage] = useState<'reading' | 'saving' | null>(null)
+  const pdfController = useRef<AbortController | null>(null)
   const [publishing, setPublishing] = useState(false)
   const [publishProblems, setPublishProblems] = useState<PublishProblem[] | null>(null)
   const [duplicate, setDuplicate] = useState<{ message: string } | null>(null)
@@ -84,6 +88,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
 
   useEffect(() => {
     return () => {
+      pdfController.current?.abort()
       screenshotsRef.current.forEach((screenshot) => URL.revokeObjectURL(screenshot.url))
     }
   }, [])
@@ -196,6 +201,34 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
     }
   }
 
+  async function extractPdf() {
+    setError(null)
+    const parsedDetails = validateDetails()
+    if (!parsedDetails) return
+    if (!pdfFile) { setError('Choose a scorecard PDF first.'); return }
+    const controller = new AbortController()
+    pdfController.current = controller
+    setBusy(true); setReading(true); setPdfStage('reading')
+    try {
+      const { readScorecardPdf } = await import('@/lib/import/readPdf')
+      const extraction = await readScorecardPdf(pdfFile, controller.signal)
+      controller.signal.throwIfAborted()
+      const nextDraft: Draft = { ...buildDraft(extraction, players, parsedDetails.opponent), moraOnly: true }
+      setPdfStage('saving')
+      const result = await createManualDraftAction(parsedDetails, nextDraft)
+      if (!result.ok) { setError(result.error); return }
+      setDraftId(result.draftId)
+      setDraft(nextDraft)
+      setNotice('Read from PDF without AI. Only Mora batting and Mora bowling were imported. Confirm the team totals, match details and player links before publishing.')
+      setStep('review')
+    } catch (error) {
+      setError(controller.signal.aborted ? 'PDF reading cancelled.' : error instanceof Error ? error.message : 'Could not read the PDF. Use a complete text-based SL Cricket Scorers export.')
+    } finally {
+      pdfController.current = null
+      setReading(false); setBusy(false); setPdfStage(null)
+    }
+  }
+
   async function startManual() {
     const parsedDetails = validateDetails()
     if (!parsedDetails) return
@@ -282,6 +315,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
   function resetImport() {
     screenshots.forEach((screenshot) => URL.revokeObjectURL(screenshot.url))
     setScreenshots([])
+    setPdfFile(null)
     setStep("upload")
     setDetails({ ...emptyDetails(), season: currentSeasonId })
     setDraftId(null)
@@ -293,7 +327,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
     setPublishedMatchId(null)
   }
 
-  if (reading) return <div className="space-y-5"><h1 className="font-display text-4xl uppercase md:text-[52px]">Import match</h1><Stepper step={2} /><section role="status" className="max-w-3xl space-y-5 rounded-[14px] border border-separator bg-surface p-6"><span className="inline-flex rounded-[12px] bg-brand-soft p-4 text-brand-hover">↥</span><h2 className="text-2xl font-semibold">Reading {screenshots.length} screenshots…</h2><p className="text-sm text-text-secondary">The scorecard is read in one request. Keep this tab open.</p><progress aria-label="Reading scorecard" className="h-2 w-full accent-accent" /><ul className="space-y-4 text-sm"><li>✓ Match details checked</li><li>✓ Screenshots selected for reading</li><li>Waiting for the scorecard reader…</li><li className="text-text-secondary">Next: link player names and review the totals</li></ul></section></div>
+  if (reading) return <div className="space-y-5"><h1 className="font-display text-4xl uppercase md:text-[52px]">Import match</h1><Stepper step={2} /><section role="status" className="max-w-3xl space-y-5 rounded-[14px] border border-separator bg-surface p-6"><h2 className="text-2xl font-semibold">{pdfStage === 'saving' ? 'Preparing draft…' : pdfStage ? 'Reading scorecard PDF…' : `Reading ${screenshots.length} screenshots…`}</h2><p className="text-sm text-text-secondary">{pdfStage ? 'The PDF is read in your browser without AI. Only Mora batting and Mora bowling are imported.' : 'The scorecard is read in one request. Keep this tab open.'}</p><progress aria-label="Reading scorecard" className="h-2 w-full accent-accent" /><p className="text-sm text-text-secondary">Next: link player names and review the totals.</p>{pdfStage === 'reading' && <Button variant="secondary" onPress={() => pdfController.current?.abort()}>Cancel reading</Button>}</section></div>
 
   if (publishedMatchId && draft) return <PublishedSummary matchId={publishedMatchId} draft={draft} details={details} players={players} />
 
@@ -331,7 +365,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
       <div className="flex flex-wrap items-center justify-between gap-3"><div>
         <h1 className="font-display text-4xl uppercase md:text-[52px]">Import match</h1>
         <p className="text-sm text-text-secondary">
-          Upload scorecard screenshots, check the players, then save the draft.
+          Upload scorecard screenshots or a PDF, check the players, then save the draft.
         </p>
       </div><Link href="/admin/drafts" className="button button--secondary">Saved drafts · {draftCount}</Link></div>
       {replaceMatchId && initialDetails && <Banner>Replacing the old match vs {initialDetails.opponent} on {initialDetails.date}</Banner>}
@@ -470,7 +504,12 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
       </section>
 
       <div className="text-xs text-text-secondary">{screenshots.length} of 10 screenshots · {(screenshots.reduce((sum, shot) => sum + shot.file.size, 0) / 1024 / 1024).toFixed(1)} MB of 4.5 MB<progress aria-label="Screenshot size" className="mt-2 h-2 w-full accent-accent" max={MAX_TOTAL_BYTES} value={screenshots.reduce((sum, shot) => sum + shot.file.size, 0)} /></div>
-</div>      <aside className="space-y-5"><section className="rounded-[14px] bg-surface p-5"><h2 className="font-semibold">How importing works</h2><ol className="mt-3 space-y-2 text-sm text-text-secondary"><li>1. Fill in match details</li><li>2. Add screenshots</li><li>3. Review and fix names</li><li>4. Publish the scorecard</li></ol></section><section className="rounded-[14px] bg-surface p-5"><h2 className="font-semibold">Privacy</h2><p className="mt-3 text-sm text-text-secondary">Screenshots are never stored. Names and scores are sent to Google Gemini to read the scorecard.</p></section><section className="rounded-[14px] bg-surface p-5"><h2 className="font-semibold">Already imported?</h2><p className="mt-3 text-sm text-text-secondary">Publishing checks for the same opponent and date. Use Manage matches to replace an older scorecard.</p></section></aside></div>
+      <section className="space-y-4 rounded-[14px] border border-separator bg-surface p-5" aria-labelledby="pdf-scorecard-heading">
+        <div><h2 id="pdf-scorecard-heading" className="text-sm font-semibold">Scorecard PDF</h2><p id="pdf-scorecard-help" className="mt-1 text-xs text-text-secondary">Use a text-based SL Cricket Scorers export, up to 10 MB and 12 pages. Reads only Mora batting and Mora bowling without AI. Fill in the match details above first.</p></div>
+        <input type="file" accept="application/pdf,.pdf" aria-label="Scorecard PDF" aria-describedby="pdf-scorecard-help" disabled={busy} onChange={(event) => { setPdfFile(event.target.files?.[0] ?? null); setError(null) }} className="block min-h-10 w-full text-sm text-text-secondary file:mr-3 file:min-h-10 file:rounded-[12px] file:border-0 file:bg-default file:px-3 file:py-2 file:text-sm file:text-default-foreground" />
+        <Button variant="secondary" isDisabled={busy || !pdfFile} onPress={extractPdf}>Read PDF without AI</Button>
+      </section>
+</div>      <aside className="space-y-5"><section className="rounded-[14px] bg-surface p-5"><h2 className="font-semibold">How importing works</h2><ol className="mt-3 space-y-2 text-sm text-text-secondary"><li>1. Fill in match details</li><li>2. Add screenshots or a PDF</li><li>3. Review and fix names</li><li>4. Publish the scorecard</li></ol></section><section className="rounded-[14px] bg-surface p-5"><h2 className="font-semibold">Privacy</h2><p className="mt-3 text-sm text-text-secondary">Screenshots are never stored. Screenshot names and scores are sent to Google Gemini. PDFs stay in your browser; only the parsed draft is saved.</p></section><section className="rounded-[14px] bg-surface p-5"><h2 className="font-semibold">Already imported?</h2><p className="mt-3 text-sm text-text-secondary">Publishing checks for the same opponent and date. Use Manage matches to replace an older scorecard.</p></section></aside></div>
       {error ? (
         <p role="alert" className="rounded-lg border border-danger/35 bg-danger/10 px-3 py-2 text-sm text-danger">
           {error}
@@ -484,7 +523,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
           disabled={busy}
           className="min-h-10 rounded-[12px] bg-brand-pressed px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
         >
-          {busy ? "Reading screenshots…" : "Read scorecard"}
+          {busy ? "Reading screenshots…" : "Read screenshots with AI"}
         </button>
 
         <button
