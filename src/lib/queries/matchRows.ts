@@ -3,7 +3,7 @@ import { INTERNAL_MATCH_TYPES } from '@/lib/stats/config'
 import type { MatchRow } from '@/lib/stats/types'
 
 export type MatchListRow = {
-  id: string; date: string; opponent: string; venue: 'Home' | 'Away'; venueName: string | null
+  id: string; season?: string; date: string; opponent: string; venue: 'Home' | 'Away'; venueName: string | null
   matchType: MatchTypeValue; overs: number
   mora: { runs: number; wickets: number; balls: number } | null
   opposition: { runs: number; wickets: number; balls: number } | null
@@ -11,7 +11,7 @@ export type MatchListRow = {
   isInternal: boolean; source: 'manual' | 'import'
 }
 export type MatchListDocument = {
-  _id: { toString(): string }; date: Date; opponent: string; venue: 'Home' | 'Away'; venueName?: string
+  _id: { toString(): string }; season?: { toString(): string } | null; date: Date; opponent: string; venue: 'Home' | 'Away'; venueName?: string
   matchType: MatchTypeValue; overs: number; source?: 'manual' | 'import'
   innings?: { team: string; runs: number; wickets: number; balls: number }[]
   result?: { outcome?: MatchRow['outcome']; margin?: number; marginType?: 'runs' | 'wickets' }
@@ -23,7 +23,7 @@ export function toMatchListRow(doc: MatchListDocument): MatchListRow {
       ? { runs: row.runs, wickets: row.wickets, balls: row.balls } : null
   }
   return {
-    id: String(doc._id), date: doc.date.toISOString(), opponent: doc.opponent, venue: doc.venue,
+    id: String(doc._id), ...(doc.season ? { season: String(doc.season) } : {}), date: doc.date.toISOString(), opponent: doc.opponent, venue: doc.venue,
     venueName: doc.venueName?.trim() || null, matchType: doc.matchType, overs: doc.overs,
     mora: innings('mora'), opposition: innings('opposition'),
     outcome: doc.result?.outcome ?? null, margin: doc.result?.margin ?? null, marginType: doc.result?.marginType ?? null,

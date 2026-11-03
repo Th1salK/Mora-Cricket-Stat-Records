@@ -20,6 +20,7 @@ export function navGroups(isAdmin: boolean): NavGroup[] {
     { label: 'Saved drafts', href: '/admin/drafts', icon: 'Edit' },
     { label: 'Manage matches', href: '/admin/matches', icon: 'List' },
     { label: 'Manage players', href: '/admin/players', icon: 'UserCog' },
+    { label: 'Manage seasons', href: '/admin/seasons', icon: 'Calendar' },
   ] })
   return groups
 }

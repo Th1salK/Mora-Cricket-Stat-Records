@@ -7,8 +7,8 @@ describe('shell navigation', () => {
     expect(navGroups(false).flatMap((group) => group.items.map((item) => item.href)))
       .toEqual(['/', '/matches', '/players', '/stats/batting', '/stats/bowling', '/records'])
   })
-  it('shows the four built admin routes only to admins', () => {
-    expect(navGroups(true)[2].items.map((item) => item.href)).toEqual(['/admin/import', '/admin/drafts', '/admin/matches', '/admin/players'])
+  it('shows season management and the other admin routes only to admins', () => {
+    expect(navGroups(true)[2].items.map((item) => item.href)).toEqual(['/admin/import', '/admin/drafts', '/admin/matches', '/admin/players', '/admin/seasons'])
     expect(navGroups(false).some((group) => group.label === 'Admin')).toBe(false)
   })
   it.each([

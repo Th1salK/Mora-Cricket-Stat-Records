@@ -1,5 +1,6 @@
 "use client"
 
+import { SeasonField, type SeasonOption } from "@/components/ui/SeasonField"
 import Link from "next/link"
 import { OptionalMatchDetails } from "@/components/import/OptionalMatchDetails"
 import { useState } from "react"
@@ -22,6 +23,8 @@ const inputClass =
   "ui-field"
 
 type DraftReviewProps = {
+  seasons?: SeasonOption[]
+  existingSeasonId?: string
   draft: Draft
   players: PlayerLite[]
   details: MatchDetails
@@ -42,6 +45,8 @@ type DraftReviewProps = {
 
 export default function DraftReview({
   draft,
+  seasons = [],
+  existingSeasonId,
   players,
   details,
   onDraftChange,
@@ -67,7 +72,8 @@ export default function DraftReview({
     ...warnings.filter((warning) => warning.blocking).map((warning) => warning.message),
     ...previewBlocking.map((problem) => problem.message),
   ]))
-  const ready = canPublish(draft) && preview.payload !== null
+  const selectedSeason = seasons.find((season) => season.id === details.season)
+  const ready = canPublish(draft) && preview.payload !== null && !!selectedSeason && (!selectedSeason.endedAt || selectedSeason.id === existingSeasonId)
   const battingCount = preview.payload?.batting.length ?? 0
   const bowlingCount = preview.payload?.bowling.length ?? 0
   const busy = saving || publishing
@@ -105,6 +111,7 @@ export default function DraftReview({
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]"><div className="min-w-0 space-y-5">      <section className="rounded-[14px] border border-separator bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Match details</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SeasonField seasons={seasons} value={details.season} existingSeasonId={existingSeasonId} onChange={(season) => onDetailsChange({ ...details, season })} />
           <label className="block text-xs text-text-secondary">
             Match type
             <select

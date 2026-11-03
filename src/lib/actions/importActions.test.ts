@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 const mock = vi.hoisted(() => ({ events: [] as string[], session: {} as Record<string, unknown>, published: false, duplicate: false, exists: true, query: {} as Record<string, unknown> }))
 vi.mock('@/lib/auth', () => ({ getCurrentUser: vi.fn(async () => ({ _id: 'admin' })) }))
 vi.mock('@/lib/mongodb', () => ({ connectDB: vi.fn() }))
-vi.mock('@/lib/seasonsServer', () => ({ ensureSeasonForDate: vi.fn(async () => 'season') }))
+vi.mock('@/lib/seasonsServer', () => ({ admitSeason: vi.fn(async () => 'season') }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('next/headers', () => ({ headers: vi.fn(async () => new Headers()) }))
 vi.mock('@/lib/rateLimit', () => ({ checkApiRateLimit: vi.fn(async () => true) }))
@@ -10,12 +10,12 @@ vi.mock('@/lib/import/extract', () => ({ ExtractionError: class extends Error {}
 vi.mock('@/lib/import/publish', () => ({ buildPublishPayload: () => ({ problems: [], payload: { match: { date: '2026-03-14', opponent: 'X' }, batting: [], bowling: [], aliases: [] } }) }))
 vi.mock('@/models/Player', () => ({ default: { find: () => ({ select: () => ({ lean: async () => [] }) }) } }))
 vi.mock('@/models/ImportDraft', () => ({ default: {
-  findById: async () => ({ status: mock.published ? 'published' : 'draft', matchDetails: { matchType: 'Div 3', date: '2026-03-14', opponent: 'X', venue: 'Home', overs: 50 }, edited: { innings: [{ side: 'mora', battingTeam: 'Mora', total: { runs: 0, wickets: 0, overs: '0.0' }, extras: { byes: 0, legByes: 0, wides: 0, noBalls: 0, penalty: 0 }, batting: [], bowling: [], didNotBat: [] }], unreadable: [] } }),
+  findById: async () => ({ status: mock.published ? 'published' : 'draft', matchDetails: { season: '507f1f77bcf86cd799439013', matchType: 'Div 3', date: '2026-03-14', opponent: 'X', venue: 'Home', overs: 50 }, edited: { innings: [{ side: 'mora', battingTeam: 'Mora', total: { runs: 0, wickets: 0, overs: '0.0' }, extras: { byes: 0, legByes: 0, wides: 0, noBalls: 0, penalty: 0 }, batting: [], bowling: [], didNotBat: [] }], unreadable: [] } }),
   updateOne: async (_query: unknown, _update: unknown, options: { session: unknown }) => { expect(options.session).toBe(mock.session); mock.events.push('mark published'); return { modifiedCount: 1 } },
 } }))
 vi.mock('@/models/Match', () => ({ default: {
   findOne: (query: Record<string, unknown>) => { mock.query = query; return { select: () => ({ lean: async () => mock.duplicate ? { _id: 'other' } : null }) } },
-  findById: () => ({ session: async (session: unknown) => { expect(session).toBe(mock.session); return mock.exists ? { _id: 'old' } : null } }),
+  findById: () => ({ session: async (session: unknown) => { expect(session).toBe(mock.session); return mock.exists ? { _id: 'old', season: '507f1f77bcf86cd799439013' } : null } }),
   deleteOne: async (_query: unknown, options: { session: unknown }) => { expect(options.session).toBe(mock.session); mock.events.push('delete match') },
   create: async (_rows: unknown, options: { session: unknown }) => { expect(options.session).toBe(mock.session); mock.events.push('create replacement'); return [{ _id: 'new' }] },
 } }))
@@ -44,4 +44,18 @@ it('never deletes anything when a draft was already published', async () => {
   mock.published = true
   expect((await publishAction(id, { replaceMatchId: old })).ok).toBe(false)
   expect(mock.events).toEqual([])
+})
+
+// Lifecycle failures must happen before old scorecards are removed.
+it('keeps the original scorecard when its requested season rejects admission', async () => {
+  const { admitSeason } = await import('@/lib/seasonsServer')
+  const { SeasonError } = await import('@/lib/seasonValidation')
+  vi.mocked(admitSeason).mockRejectedValueOnce(new SeasonError('Season has ended'))
+  expect(await publishAction(id, { replaceMatchId: old })).toEqual({ ok: false, error: 'Season has ended' })
+  expect(mock.events).toEqual(['begin'])
+})
+it('checks the selected season inside the publishing transaction', async () => {
+  const { admitSeason } = await import('@/lib/seasonsServer')
+  await publishAction(id, { replaceMatchId: old })
+  expect(admitSeason).toHaveBeenLastCalledWith('507f1f77bcf86cd799439013', mock.session, '507f1f77bcf86cd799439013')
 })

@@ -1,3 +1,4 @@
+import { listSeasons } from "@/lib/seasonsServer"
 import { scalar, type PageParams } from "@/lib/ui/url"
 import { getMatchDetail } from "@/lib/queries/matches"
 import mongoose from "mongoose"
@@ -19,7 +20,9 @@ export default async function DraftPage({
 
   const { draftId } = await params
   const replaceMatchId = scalar((await searchParams).replace)
-  if (replaceMatchId && !(await getMatchDetail(replaceMatchId))) notFound()
+  const replacement = replaceMatchId ? await getMatchDetail(replaceMatchId) : null
+  if (replaceMatchId && !replacement) notFound()
+  const seasons = await listSeasons()
   if (!mongoose.isValidObjectId(draftId)) notFound()
 
   await connectDB()
@@ -50,6 +53,8 @@ export default async function DraftPage({
   return (
     <SavedDraftClient
       draftId={draftId}
+      seasons={seasons}
+      existingSeasonId={replacement?.match.season}
       replaceMatchId={replaceMatchId}
       initialDetails={draft.matchDetails}
       initialDraft={draft.edited}

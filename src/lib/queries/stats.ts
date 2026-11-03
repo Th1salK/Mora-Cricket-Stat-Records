@@ -8,7 +8,6 @@ import { battingSummary, battingByPlayer, type BattingSummary } from '@/lib/stat
 import { bowlingSummary, bowlingByPlayer, type BowlingSummary } from '@/lib/stats/bowling'
 import { HIDE_INACTIVE_IN_CURRENT_SEASON } from '@/lib/stats/config'
 import { fmtOvers } from '@/lib/stats/format'
-import { seasonForDate } from '@/lib/stats/seasons'
 import { compareNullable } from '@/lib/stats/sort'
 import { resultSummary } from '@/lib/stats/results'
 import * as records from '@/lib/stats/records'
@@ -37,14 +36,7 @@ export async function resolveFilter(params: { season?: string | null; matchType?
     const season = await Season.findById(params.season).select('name').lean()
     if (season) selected = { id: String(season._id), name: season.name }
   }
-  if (!selected) {
-    selected = current
-    if (selected && !(await Match.exists({ season: selected.id }))) {
-      const ids = await Match.distinct('season')
-      const latest = await Season.findOne({ _id: { $in: ids } }).select('name').sort({ startDate: -1 }).lean()
-      selected = latest ? { id: String(latest._id), name: latest.name } : null
-    }
-  }
+  if (!selected) selected = current
   return { seasonId: selected?.id ?? 'all', matchType, seasonName: selected?.name ?? null,
     isCurrentSeason: !!selected && selected.id === current?.id }
 }
@@ -122,7 +114,7 @@ export async function getRecords(filter: StatsFilter) {
   const seasons = await Season.find({ _id: { $in: seasonIds } }).select('name').lean()
   const names = new Map(seasons.map((season) => [String(season._id), season.name]))
   const matchSeasons = new Map(data.docs.map((match) => [String(match._id),
-    (match.season ? names.get(String(match.season)) : undefined) ?? seasonForDate(match.date).name]))
+    (match.season ? names.get(String(match.season)) : undefined) ?? 'Unassigned']))
   const seasonOf = (matchId: string) => matchSeasons.get(matchId)!
   return {
     ...dashboardTotals(data.batting, data.bowling),

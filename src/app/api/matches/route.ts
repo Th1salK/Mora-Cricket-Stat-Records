@@ -1,15 +1,17 @@
+import mongoose from "mongoose"
 import { NextResponse } from "next/server"
 import { connectDB } from "@/lib/mongodb"
 import { assertCanWrite } from "@/lib/auth"
 import { checkApiRateLimit, apiLockoutSeconds } from "@/lib/rateLimit"
 import { matchSchema } from "@/lib/validations"
-import { ensureSeasonForDate } from "@/lib/seasonsServer"
+import { admitSeason } from "@/lib/seasonsServer"
+import { SeasonError } from "@/lib/seasonValidation"
 import Match from "@/models/Match"
 
 export async function GET() {
   try {
     await connectDB()
-    const matches = await Match.find().select('-season').sort({ date: -1 }).lean()
+    const matches = await Match.find().sort({ date: -1 }).lean()
     return NextResponse.json(matches)
   } catch {
     return NextResponse.json({ error: "Failed to fetch matches" }, { status: 500 })
@@ -36,12 +38,17 @@ export async function POST(request: Request) {
     }
 
     await connectDB()
-    const seasonId = await ensureSeasonForDate(new Date(parsed.data.date))
-    const match = await Match.create({ ...parsed.data, season: seasonId })
-    const response = match.toObject()
-    delete response.season
-    return NextResponse.json(response, { status: 201 })
-  } catch {
+    const session = await mongoose.startSession()
+    try {
+      const match = await session.withTransaction(async () => {
+        const seasonId = await admitSeason(parsed.data.season, session)
+        const [created] = await Match.create([{ ...parsed.data, season: seasonId }], { session })
+        return created.toObject()
+      })
+      return NextResponse.json(match, { status: 201 })
+    } finally { await session.endSession() }
+  } catch (error) {
+    if (error instanceof SeasonError) return NextResponse.json({ error: error.message }, { status: 400 })
     return NextResponse.json({ error: "Failed to create match" }, { status: 500 })
   }
 }
