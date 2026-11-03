@@ -342,7 +342,7 @@ export default function ImportClient({ players, draftCount = 0, initialDetails, 
       <section className="rounded-[14px] border border-separator bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Match details</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SeasonField seasons={seasons} value={details.season} existingSeasonId={replaceMatchId ? initialDetails?.season : undefined} onChange={(season) => setDetails({ ...details, season })} />
+          <SeasonField compact seasons={seasons} value={details.season} existingSeasonId={replaceMatchId ? initialDetails?.season : undefined} onChange={(season) => setDetails({ ...details, season })} />
           <label className="block text-xs text-text-secondary">
             Match type
             <select

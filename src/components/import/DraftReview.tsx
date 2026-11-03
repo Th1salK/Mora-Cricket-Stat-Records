@@ -111,7 +111,7 @@ export default function DraftReview({
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]"><div className="min-w-0 space-y-5">      <section className="rounded-[14px] border border-separator bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Match details</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SeasonField seasons={seasons} value={details.season} existingSeasonId={existingSeasonId} onChange={(season) => onDetailsChange({ ...details, season })} />
+          <SeasonField compact seasons={seasons} value={details.season} existingSeasonId={existingSeasonId} onChange={(season) => onDetailsChange({ ...details, season })} />
           <label className="block text-xs text-text-secondary">
             Match type
             <select

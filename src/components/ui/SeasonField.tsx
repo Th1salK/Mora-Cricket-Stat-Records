@@ -3,12 +3,12 @@ import Link from 'next/link'
 import type { listSeasons } from '@/lib/seasonsServer'
 
 export type SeasonOption = Awaited<ReturnType<typeof listSeasons>>[number]
-export function SeasonField({ seasons, value, onChange, existingSeasonId }: {
-  seasons: SeasonOption[]; value?: string; onChange: (id: string) => void; existingSeasonId?: string
+export function SeasonField({ seasons, value, onChange, existingSeasonId, compact = false }: {
+  seasons: SeasonOption[]; value?: string; onChange: (id: string) => void; existingSeasonId?: string; compact?: boolean
 }) {
   const available = seasons.some((season) => !season.endedAt || season.id === existingSeasonId)
-  return <label className="block text-sm">Season
-    <select required className="ui-field mt-2" value={value ?? ''} onChange={(event) => onChange(event.target.value)}>
+  return <label className={compact ? 'block text-xs text-text-secondary' : 'block text-sm'}>Season
+    <select required className={compact ? 'ui-field mt-1' : 'ui-field mt-2'} value={value ?? ''} onChange={(event) => onChange(event.target.value)}>
       <option value="" disabled>Choose a season</option>
       {seasons.map((season) => <option key={season.id} value={season.id} disabled={!!season.endedAt && season.id !== existingSeasonId}>
         {season.name} Season{season.endedAt ? ' · Ended' : season.isCurrent ? ' · Current' : ''}
