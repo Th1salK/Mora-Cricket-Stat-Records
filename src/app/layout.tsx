@@ -5,7 +5,8 @@ import { join } from 'node:path'
 import '@/app/globals.css'
 import { AppShell } from '@/components/shell/AppShell'
 import type { ShellSeason } from '@/components/shell/types'
-import { isAdmin } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
+import { isSuperadminRole } from '@/lib/adminAccounts'
 import { listSeasonsWithCounts, getCurrentSeason } from '@/lib/seasonsServer'
 
 const inter = Inter({ variable: '--font-inter', subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap' })
@@ -19,7 +20,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { viewportFit: 'cover' }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const admin = await isAdmin()
+  const user = await getCurrentUser()
+  const admin = !!user
+  const superadmin = isSuperadminRole(user?.role)
   let seasons: ShellSeason[] = []
   let currentSeasonId: string | null = null
   try {
@@ -33,7 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return <html lang="en" className="dark" data-theme="dark">
     <body className={`${inter.variable} ${jersey.variable} font-sans antialiased`}>
       <a href="#main" className="skip-link">Skip to content</a>
-      <AppShell isAdmin={admin} seasons={seasons} currentSeasonId={currentSeasonId} hasLogo={hasLogo}>{children}</AppShell>
+      <AppShell isAdmin={admin} isSuperadmin={superadmin} seasons={seasons} currentSeasonId={currentSeasonId} hasLogo={hasLogo}>{children}</AppShell>
     </body>
   </html>
 }

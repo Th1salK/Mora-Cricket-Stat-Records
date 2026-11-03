@@ -1,13 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@heroui/react'
 import { Banner } from '@/components/ui/Banner'
 
 export default function LoginForm() {
-  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -32,8 +30,8 @@ export default function LoginForm() {
         return
       }
 
-      router.push('/')
-      router.refresh()
+      // Reload the shell after setting the session cookie so its navigation uses the signed-in role.
+      window.location.assign(data.role === 'superadmin' ? '/admin/admins' : '/')
     } catch {
       setError('Login failed. Please try again.')
     } finally {

@@ -11,6 +11,14 @@ describe('shell navigation', () => {
     expect(navGroups(true)[2].items.map((item) => item.href)).toEqual(['/admin/import', '/admin/drafts', '/admin/matches', '/admin/players', '/admin/seasons'])
     expect(navGroups(false).some((group) => group.label === 'Admin')).toBe(false)
   })
+  it('only exposes account management in superadmin navigation', () => {
+    expect(navGroups(true, true).map((group) => group.label)).toEqual(['Overview', 'Statistics', 'Superadmin', 'Management'])
+    expect(navGroups(true, true)[2].items).toEqual([{ label: 'Manage admins', href: '/admin/admins', icon: 'UserCog' }])
+    expect(navGroups(true, false)[2].items.map((item) => item.href)).not.toContain('/admin/admins')
+    expect(navGroups(false, true).some((group) => group.label === 'Admin')).toBe(false)
+    expect(navGroups(false, true).flatMap((group) => group.items).some((item) => item.href === '/admin/admins')).toBe(false)
+    expect(navGroups(true, true)[3].items).toEqual(navGroups(true, false)[2].items)
+  })
   it.each([
     ['/', '/', true], ['/players', '/', false], ['/players', '/players', true],
     ['/players/123', '/players', true], ['/playersX', '/players', false],
