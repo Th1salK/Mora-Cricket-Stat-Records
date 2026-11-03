@@ -195,13 +195,13 @@ export default function DraftReview({
 </div><aside className="space-y-5">      <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">Warnings</h2>
-          <button
+          {!draft.moraOnly && <button
             type="button"
             onClick={() => onDraftChange(swapSides(draft, players))}
             className="min-h-10 rounded-[12px] border border-border px-3 py-2 text-xs text-brand-hover hover:bg-accent/10"
           >
             Swap sides
-          </button>
+          </button>}
         </div>
 
         {warnings.length === 0 ? (
@@ -232,7 +232,7 @@ export default function DraftReview({
 
       {draft.unreadable.length > 0 ? (
         <section className="rounded-[14px] border border-separator bg-surface p-4">
-          <h2 className="mb-2 text-sm font-semibold text-foreground">The AI could not read</h2>
+          <h2 className="mb-2 text-sm font-semibold text-foreground">Check these scorecard details</h2>
           <ul className="list-inside list-disc text-sm text-gold">
             {draft.unreadable.map((item, index) => (
               <li key={index}>{item}</li>

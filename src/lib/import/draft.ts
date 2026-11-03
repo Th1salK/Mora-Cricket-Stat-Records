@@ -9,7 +9,7 @@ import {
   type Extraction,
   type Innings,
 } from "@/lib/import/schema"
-import { checkExtraction, type Warning } from "@/lib/import/checks"
+import { checkExtraction, checkInnings, type Warning } from "@/lib/import/checks"
 import { matchName, normalise, similarity, type NameMatch, type PlayerLite } from "@/lib/import/matchPlayers"
 
 export type Side = "mora" | "opposition"
@@ -33,6 +33,7 @@ export type DraftInnings = Omit<Innings, "batting" | "bowling"> & {
 export type Draft = {
   innings: DraftInnings[]
   unreadable: string[]
+  moraOnly?: true
 }
 
 export type DraftWarning = Warning & { blocking: boolean }
@@ -91,6 +92,7 @@ const DraftInningsSchema = InningsSchema.extend({
 export const DraftSchema = z.object({
   innings: z.array(DraftInningsSchema).min(1).max(2),
   unreadable: z.array(z.string()),
+  moraOnly: z.literal(true).optional(),
 })
 
 function isConfirmedMatch(match: NameMatch): boolean {
@@ -200,6 +202,8 @@ function rematchRow<T extends DraftBattingRow | DraftBowlingRow>(
 }
 
 export function swapSides(draft: Draft, players: PlayerLite[]): Draft {
+  // The other tables were deliberately not imported, so swapping would relabel Mora's own rows.
+  if (draft.moraOnly) return draft
   const teamNames = [
     ...draft.innings.map((innings) => innings.battingTeam),
     "Mora Cricket",
@@ -276,7 +280,10 @@ export function setPlayer(
 }
 
 export function draftWarnings(draft: Draft): DraftWarning[] {
-  const warnings: DraftWarning[] = checkExtraction(draft).map((warning) => ({
+  const checks = draft.moraOnly
+    ? draft.innings.flatMap((inn, index) => checkInnings(inn, index + 1, { batting: inn.side === 'mora', bowling: inn.side === 'opposition' }))
+    : checkExtraction(draft)
+  const warnings: DraftWarning[] = checks.map((warning) => ({
     ...warning,
     blocking: false,
   }))
